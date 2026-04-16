@@ -318,14 +318,7 @@
         <div class="field">
           <label>Kod surowca</label>
           <select id="raw-code" onchange="onCodeChange()">
-            <option value="">— wybierz —</option>
-            <option value="SUG-001">SUG-001</option>
-            <option value="OIL-002">OIL-002</option>
-            <option value="MLK-003">MLK-003</option>
-            <option value="WHT-004">WHT-004</option>
-            <option value="SAL-005">SAL-005</option>
-            <option value="STA-006">STA-006</option>
-            <option value="GLU-007">GLU-007</option>
+            <option value="">— ładowanie... —</option>
           </select>
         </div>
         <div class="field" style="grid-column: 2/4;">
@@ -611,15 +604,37 @@
 </div><!-- /container -->
 
 <script>
-const RAW_NAMES = {
-  "SUG-001": "Cukier biały krystaliczny",
-  "OIL-002": "Olej rzepakowy rafinowany",
-  "MLK-003": "Mleko odtłuszczone w proszku",
-  "WHT-004": "Mąka pszenna typ 500",
-  "SAL-005": "Sól warzona jodowana",
-  "STA-006": "Skrobia ziemniaczana modyfikowana",
-  "GLU-007": "Gluten pszenny vital"
-};
+const GAS_URL = 'https://script.google.com/a/macros/premiumrosa.eu/s/AKfycbxhXP9DifxlyPBvLVpt5qCGB24z9mil17eu0VdyFPjgX3mYTLNXB107xVfug1bO0PFszw/exec';
+let RAW_NAMES = {};
+
+async function loadSurowce() {
+  const select = document.getElementById('raw-code');
+  try {
+    const resp = await fetch(GAS_URL);
+    const data = await resp.json();
+    if (data.status === 'ok' && data.surowce) {
+      RAW_NAMES = {};
+      select.innerHTML = '<option value="">— wybierz —</option>';
+      data.surowce.forEach(s => {
+        RAW_NAMES[s.sku] = s.nazwa;
+        const opt = document.createElement('option');
+        opt.value = s.sku;
+        opt.textContent = s.sku + ' — ' + s.nazwa;
+        select.appendChild(opt);
+      });
+    } else {
+      select.innerHTML = '<option value="">— błąd ładowania słownika —</option>';
+    }
+  } catch(e) {
+    select.innerHTML = '<option value="">— błąd połączenia —</option>';
+    console.error(e);
+  }
+}
+
+function onCodeChange() {
+  const code = document.getElementById('raw-code').value;
+  document.getElementById('raw-name').value = RAW_NAMES[code] || '';
+}
 
 const STEPS = [
   { title: "Krok 1 z 7", desc: "Identyfikacja surowca" },
@@ -719,7 +734,7 @@ function collectData() {
 }
 
 async function saveToSheets() {
-  const url = 'https://script.google.com/a/macros/premiumrosa.eu/s/AKfycbxhXP9DifxlyPBvLVpt5qCGB24z9mil17eu0VdyFPjgX3mYTLNXB107xVfug1bO0PFszw/exec';
+  const url = GAS_URL;
   document.getElementById('save-status').innerHTML = '<div class="alert alert-info">Zapisywanie danych...</div>';
   try {
     await fetch(url, {
@@ -797,6 +812,7 @@ function toggleScript() {
   panel.style.display = panel.style.display === 'none' ? '' : 'none';
 }
 
+loadSurowce();
 updateUI();
 </script>
 </body>
