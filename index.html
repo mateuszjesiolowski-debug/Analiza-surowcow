@@ -610,23 +610,25 @@ let RAW_NAMES = {};
 async function loadSurowce() {
   const select = document.getElementById('raw-code');
   try {
-    const resp = await fetch(GAS_URL);
-    const data = await resp.json();
-    if (data.status === 'ok' && data.surowce) {
-      RAW_NAMES = {};
-      select.innerHTML = '<option value="">— wybierz —</option>';
-      data.surowce.forEach(s => {
-        RAW_NAMES[s.sku] = s.nazwa;
+    const resp = await fetch('surowce.csv');
+    const text = await resp.text();
+    const lines = text.trim().split('\n').slice(1); // pomiń nagłówek
+    RAW_NAMES = {};
+    select.innerHTML = '<option value="">— wybierz —</option>';
+    lines.forEach(line => {
+      const parts = line.split(';');
+      const sku = parts[0] ? parts[0].trim().replace(/^"|"$/g, '') : '';
+      const nazwa = parts[1] ? parts[1].trim().replace(/^"|"$/g, '') : '';
+      if (sku && nazwa) {
+        RAW_NAMES[sku] = nazwa;
         const opt = document.createElement('option');
-        opt.value = s.sku;
-        opt.textContent = s.sku + ' — ' + s.nazwa;
+        opt.value = sku;
+        opt.textContent = sku + ' — ' + nazwa;
         select.appendChild(opt);
-      });
-    } else {
-      select.innerHTML = '<option value="">— błąd ładowania słownika —</option>';
-    }
+      }
+    });
   } catch(e) {
-    select.innerHTML = '<option value="">— błąd połączenia —</option>';
+    select.innerHTML = '<option value="">— błąd ładowania słownika —</option>';
     console.error(e);
   }
 }
