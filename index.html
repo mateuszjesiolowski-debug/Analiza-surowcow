@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Analiza wydłużenia terminu ważności surowca</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --green: #1D9E75;
+    --green-light: #e1f5ee;
+    --green-dark: #0f6e56;
+    --blue-bg: #e6f1fb;
+    --blue-text: #185fa5;
+    --warn-bg: #faeeda;
+    --warn-text: #854f0b;
+    --gray-bg: #f5f5f3;
+    --gray-border: #e0ddd6;
+    --text: #1a1a18;
+    --text-muted: #6b6b67;
+    --white: #ffffff;
+    --radius: 10px;
+    --radius-sm: 6px;
+  }
+
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: #f0ede6;
+    color: var(--text);
+    min-height: 100vh;
+    padding: 2rem 1rem;
+  }
+
+  .container {
+    max-width: 780px;
+    margin: 0 auto;
+  }
+
+  /* Header */
+  .app-header {
+    background: var(--white);
+    border-radius: var(--radius);
+    padding: 1.5rem 2rem;
+    margin-bottom: 1.5rem;
+    border: 1px solid var(--gray-border);
+  }
+  .app-header h1 {
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+  .app-header p {
+    font-size: 14px;
+    color: var(--text-muted);
+  }
+
+  /* Progress */
+  .progress-wrap {
+    background: var(--white);
+    border-radius: var(--radius);
+    padding: 1.25rem 2rem;
+    margin-bottom: 1.5rem;
+    border: 1px solid var(--gray-border);
+  }
+  .progress-steps {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 10px;
+  }
+  .ps {
+    flex: 1;
+    height: 5px;
+    border-radius: 3px;
+    background: var(--gray-bg);
+    transition: background 0.3s;
+  }
+  .ps.done { background: var(--green); }
+  .ps.active { background: var(--green); opacity: 0.5; }
+  .progress-label {
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+  .progress-label strong { color: var(--text); }
+
+  /* Card */
+  .card {
+    background: var(--white);
+    border-radius: var(--radius);
+    border: 1px solid var(--gray-border);
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+  }
+  .card-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 1.25rem;
+  }
+  .dept-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 1.25rem;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .badge {
+    display: inline-block;
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-weight: 500;
+  }
+  .bd { background: var(--blue-bg); color: var(--blue-text); }
+  .bw { background: var(--warn-bg); color: var(--warn-text); }
+  .bg { background: var(--green-light); color: var(--green-dark); }
+
+  /* Form fields */
+  .field { margin-bottom: 1.1rem; }
+  .field:last-child { margin-bottom: 0; }
+  .field label {
+    display: block;
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+    font-weight: 500;
+  }
+  .field input,
+  .field select,
+  .field textarea {
+    width: 100%;
+    padding: 9px 12px;
+    font-size: 14px;
+    font-family: inherit;
+    border: 1px solid var(--gray-border);
+    border-radius: var(--radius-sm);
+    background: var(--white);
+    color: var(--text);
+    transition: border-color 0.15s, box-shadow 0.15s;
+    outline: none;
+  }
+  .field input:focus,
+  .field select:focus,
+  .field textarea:focus {
+    border-color: var(--green);
+    box-shadow: 0 0 0 3px rgba(29,158,117,0.12);
+  }
+  .field input[readonly] {
+    background: var(--gray-bg);
+    color: var(--text-muted);
+  }
+  .field textarea { height: 80px; resize: vertical; }
+
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+
+  @media (max-width: 560px) {
+    .row2, .row3 { grid-template-columns: 1fr; }
+  }
+
+  /* Radio group */
+  .radio-group { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+  .radio-option {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 13px;
+    color: var(--text);
+    cursor: pointer;
+    padding: 7px 14px;
+    border: 1px solid var(--gray-border);
+    border-radius: 20px;
+    transition: border-color 0.15s, background 0.15s;
+    user-select: none;
+  }
+  .radio-option:has(input:checked) {
+    border-color: var(--green);
+    background: var(--green-light);
+    color: var(--green-dark);
+  }
+  .radio-option input { display: none; }
+
+  .divider { border: none; border-top: 1px solid var(--gray-border); margin: 1.25rem 0; }
+
+  /* Nav */
+  .nav-bar {
+    background: var(--white);
+    border-radius: var(--radius);
+    border: 1px solid var(--gray-border);
+    padding: 1rem 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 0.5rem;
+    position: sticky;
+    bottom: 1rem;
+  }
+  .nav-hint { font-size: 13px; color: var(--text-muted); }
+  .btn-group { display: flex; gap: 10px; }
+  .btn {
+    padding: 9px 20px;
+    font-size: 14px;
+    font-family: inherit;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-weight: 500;
+    transition: opacity 0.15s, transform 0.1s;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn-ghost {
+    background: transparent;
+    border: 1px solid var(--gray-border);
+    color: var(--text);
+  }
+  .btn-ghost:hover { background: var(--gray-bg); }
+  .btn-primary {
+    background: var(--green);
+    border: none;
+    color: #fff;
+  }
+  .btn-primary:hover { background: var(--green-dark); }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* Summary */
+  .summary-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--gray-border);
+    font-size: 14px;
+    gap: 16px;
+  }
+  .summary-row:last-child { border-bottom: none; }
+  .sk { color: var(--text-muted); flex-shrink: 0; }
+  .sv { font-weight: 500; color: var(--text); text-align: right; }
+
+  /* Alerts */
+  .alert {
+    padding: 10px 14px;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    margin-top: 10px;
+  }
+  .alert-ok { background: var(--green-light); color: var(--green-dark); }
+  .alert-err { background: #fcebeb; color: #a32d2d; }
+  .alert-info { background: var(--blue-bg); color: var(--blue-text); }
+
+  /* GAS code */
+  .code-block {
+    background: #1e1e2e;
+    color: #cdd6f4;
+    border-radius: var(--radius-sm);
+    padding: 1.25rem;
+    font-size: 12px;
+    font-family: 'Consolas', 'Courier New', monospace;
+    overflow-x: auto;
+    white-space: pre;
+    line-height: 1.7;
+    margin-top: 1rem;
+  }
+  .step-hidden { display: none; }
+
+  /* Config panel */
+  .config-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--blue-text);
+    cursor: pointer;
+    margin-bottom: 1rem;
+    text-decoration: underline;
+  }
+  .config-panel {
+    background: var(--gray-bg);
+    border-radius: var(--radius-sm);
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border: 1px solid var(--gray-border);
+  }
+  .config-panel .field { margin-bottom: 0.75rem; }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- Header -->
+  <div class="app-header">
+    <h1>Analiza wydłużenia terminu ważności surowca</h1>
+    <p>Formularz obejmuje 7 kroków procesu — od identyfikacji surowca po decyzję końcową i nowe parametry partii</p>
+  </div>
+
+  <!-- Progress -->
+  <div class="progress-wrap">
+    <div class="progress-steps" id="prog-bar">
+      <div class="ps active"></div>
+      <div class="ps"></div>
+      <div class="ps"></div>
+      <div class="ps"></div>
+      <div class="ps"></div>
+      <div class="ps"></div>
+      <div class="ps"></div>
+    </div>
+    <div class="progress-label"><strong id="step-title">Krok 1 z 7</strong> — <span id="step-desc">Identyfikacja surowca</span></div>
+  </div>
+
+  <!-- ===== STEP 1 ===== -->
+  <div id="step-1">
+    <div class="card">
+      <div class="card-title">Identyfikacja surowca</div>
+      <div class="row3">
+        <div class="field">
+          <label>Kod surowca</label>
+          <select id="raw-code" onchange="onCodeChange()">
+            <option value="">— wybierz —</option>
+            <option value="SUG-001">SUG-001</option>
+            <option value="OIL-002">OIL-002</option>
+            <option value="MLK-003">MLK-003</option>
+            <option value="WHT-004">WHT-004</option>
+            <option value="SAL-005">SAL-005</option>
+            <option value="STA-006">STA-006</option>
+            <option value="GLU-007">GLU-007</option>
+          </select>
+        </div>
+        <div class="field" style="grid-column: 2/4;">
+          <label>Nazwa surowca (uzupełnia się automatycznie)</label>
+          <input type="text" id="raw-name" readonly placeholder="— wybierz kod surowca —">
+        </div>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label>Numer partii (LOT)</label>
+          <input type="text" id="lot-in" placeholder="np. LOT-2024-0312-A">
+        </div>
+        <div class="field">
+          <label>Oryginalna data ważności</label>
+          <input type="date" id="orig-exp">
+        </div>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label>Ilość pozostała (kg / L / szt.)</label>
+          <input type="text" id="qty" placeholder="np. 250 kg">
+        </div>
+        <div class="field">
+          <label>Lokalizacja w magazynie</label>
+          <input type="text" id="location" placeholder="np. Regał A3, Komora chłodnicza 2">
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Źródło identyfikacji — Qguar</div>
+      <div class="field">
+        <label>Przyczyna identyfikacji</label>
+        <div class="radio-group">
+          <label class="radio-option"><input type="radio" name="flag" value="system">Automatyczna flaga systemu</label>
+          <label class="radio-option"><input type="radio" name="flag" value="manual">Ręczna identyfikacja</label>
+          <label class="radio-option"><input type="radio" name="flag" value="audit">Kontrola magazynu</label>
+        </div>
+      </div>
+      <div class="field" style="margin-top:1rem;">
+        <label>Data identyfikacji</label>
+        <input type="date" id="ident-date">
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== STEP 2 ===== -->
+  <div id="step-2" class="step-hidden">
+    <div class="card">
+      <div class="dept-row"><span class="badge bd">Dział Logistyki</span> Przyczyny i szacowanie strat</div>
+      <div class="field">
+        <label>Przyczyny powstania pozostałości surowca</label>
+        <textarea id="cause" placeholder="Nadmierne zamówienie, zmiana receptury, opóźnienie produkcji..."></textarea>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label>Szacowana wartość strat (PLN)</label>
+          <input type="number" id="loss-val" placeholder="0.00" step="0.01">
+        </div>
+        <div class="field">
+          <label>Osoba odpowiedzialna</label>
+          <input type="text" id="log-person" placeholder="Imię i nazwisko">
+        </div>
+      </div>
+      <div class="field">
+        <label>Propozycja działań korygujących</label>
+        <textarea id="corr-action" placeholder="Opisz proponowane działania..."></textarea>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Warunki magazynowania</div>
+      <div class="row3">
+        <div class="field">
+          <label>Temperatura (°C)</label>
+          <input type="number" id="temp" placeholder="np. 4">
+        </div>
+        <div class="field">
+          <label>Stan opakowania</label>
+          <div class="radio-group" style="margin-top:4px;">
+            <label class="radio-option"><input type="radio" name="pkg" value="zamknięte">Zamknięte</label>
+            <label class="radio-option"><input type="radio" name="pkg" value="otwarte">Otwarte</label>
+          </div>
+        </div>
+        <div class="field">
+          <label>Liczba otwarć</label>
+          <input type="number" id="openings" placeholder="0" min="0">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== STEP 3 ===== -->
+  <div id="step-3" class="step-hidden">
+    <div class="card">
+      <div class="dept-row"><span class="badge bd">Dział R&D</span> Analiza specyfikacji surowca</div>
+      <div class="field">
+        <label>Parametry krytyczne zmieniające się w czasie</label>
+        <textarea id="rd-params" placeholder="Barwa, zapach, lepkość, aktywność wody, pH..."></textarea>
+      </div>
+      <div class="field">
+        <label>Receptury zawierające ten składnik</label>
+        <textarea id="rd-recipes" placeholder="Lista receptur z numerami..."></textarea>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label>Procentowa zawartość w produkcie gotowym (%)</label>
+          <input type="number" id="rd-pct" placeholder="np. 3.5" step="0.01">
+        </div>
+        <div class="field">
+          <label>Osoba odpowiedzialna</label>
+          <input type="text" id="rd-person" placeholder="Imię i nazwisko">
+        </div>
+      </div>
+      <div class="field">
+        <label>Wpływ na produkt gotowy po upływie terminu</label>
+        <textarea id="rd-impact" placeholder="Potencjalny wpływ na jakość, bezpieczeństwo, właściwości produktu..."></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== STEP 4 ===== -->
+  <div id="step-4" class="step-hidden">
+    <div class="card">
+      <div class="dept-row"><span class="badge bd">Dział Jakości</span> Metody badawcze</div>
+      <div class="field">
+        <label>Określone metody badawcze (normy ISO)</label>
+        <textarea id="qa-methods" placeholder="np. ISO 6888-1, ISO 4833, metody własne..."></textarea>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label>Budżet badań (PLN)</label>
+          <input type="number" id="qa-budget" placeholder="0.00" step="0.01">
+        </div>
+        <div class="field">
+          <label>Osoba odpowiedzialna</label>
+          <input type="text" id="qa-person" placeholder="Imię i nazwisko">
+        </div>
+      </div>
+      <div class="field">
+        <label>Wymagania klienta uwzględnione w badaniach</label>
+        <textarea id="qa-client-req" placeholder="Opisz wymagania klienta..."></textarea>
+      </div>
+    </div>
+    <div class="card">
+      <div class="dept-row"><span class="badge bd">Kierownik Produkcji</span> Ocena przydatności do produkcji</div>
+      <div class="row2">
+        <div class="field">
+          <label>Masa produktu zagrożonego (kg)</label>
+          <input type="number" id="prod-mass" placeholder="0" min="0">
+        </div>
+        <div class="field">
+          <label>Osoba odpowiedzialna</label>
+          <input type="text" id="prod-person" placeholder="Imię i nazwisko">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== STEP 5 ===== -->
+  <div id="step-5" class="step-hidden">
+    <div class="card">
+      <div class="dept-row"><span class="badge bd">Zespół Sensoryczny</span> Ocena sensoryczna próbek</div>
+      <div class="field">
+        <label>Wyniki oceny sensorycznej</label>
+        <textarea id="sen-result" placeholder="Barwa, zapach, smak, konsystencja, wygląd..."></textarea>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label>Ocena ogólna</label>
+          <select id="sen-grade">
+            <option value="">— wybierz —</option>
+            <option value="pozytywna">Pozytywna — brak odchyleń</option>
+            <option value="warunkowo_pozytywna">Warunkowo pozytywna — drobne odchylenia</option>
+            <option value="negatywna">Negatywna — odchylenia dyskwalifikujące</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Data przeprowadzenia oceny</label>
+          <input type="date" id="sen-date">
+        </div>
+      </div>
+      <div class="field">
+        <label>Osoba odpowiedzialna</label>
+        <input type="text" id="sen-person" placeholder="Imię i nazwisko">
+      </div>
+    </div>
+    <div class="card">
+      <div class="dept-row"><span class="badge bd">Dział Zakupów</span> Ocena możliwości sprzedaży</div>
+      <div class="field">
+        <label>Opcja</label>
+        <div class="radio-group">
+          <label class="radio-option"><input type="radio" name="sell" value="tak">Możliwa sprzedaż</label>
+          <label class="radio-option"><input type="radio" name="sell" value="nie">Brak możliwości sprzedaży</label>
+          <label class="radio-option"><input type="radio" name="sell" value="czesciowa">Częściowa sprzedaż</label>
+        </div>
+      </div>
+      <div class="field" style="margin-top:1rem;">
+        <label>Szacowana cena sprzedaży (PLN/kg lub PLN/L)</label>
+        <input type="number" id="sell-price" placeholder="0.00" step="0.01">
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== STEP 6 ===== -->
+  <div id="step-6" class="step-hidden">
+    <div class="card">
+      <div class="dept-row"><span class="badge bw">Dyrektor Operacyjny</span> Wyniki oceny ryzyka i decyzja</div>
+      <div class="field">
+        <label>Decyzja końcowa</label>
+        <div class="radio-group">
+          <label class="radio-option"><input type="radio" name="decision" value="uzywac">Używać w produkcji</label>
+          <label class="radio-option"><input type="radio" name="decision" value="sprzedac">Sprzedać surowiec</label>
+          <label class="radio-option"><input type="radio" name="decision" value="utylizacja">Utylizacja / odpad</label>
+        </div>
+      </div>
+      <div class="field" style="margin-top:1rem;">
+        <label>Uzasadnienie decyzji</label>
+        <textarea id="decision-reason" placeholder="Pełne uzasadnienie w oparciu o wyniki badań i ocenę ryzyka..."></textarea>
+      </div>
+      <div class="row2">
+        <div class="field">
+          <label>Numer protokołu oceny ryzyka</label>
+          <input type="text" id="proto-num" placeholder="np. PR-2024-0056">
+        </div>
+        <div class="field">
+          <label>Data decyzji</label>
+          <input type="date" id="decision-date">
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Nowe parametry surowca (jeśli dopuszczony do produkcji)</div>
+      <div class="row2">
+        <div class="field">
+          <label>Nowa data przydatności (wydłużona)</label>
+          <input type="date" id="new-exp">
+        </div>
+        <div class="field">
+          <label>Nowy numer partii (LOT)</label>
+          <input type="text" id="new-lot" placeholder="np. LOT-2024-0312-A-EXT1">
+        </div>
+      </div>
+      <div class="field">
+        <label>Uwagi do znakowania</label>
+        <input type="text" id="label-note" placeholder="np. Używać do 30.06.2025 zgodnie z protokołem PR-2024-0056">
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== STEP 7 ===== -->
+  <div id="step-7" class="step-hidden">
+    <div class="card">
+      <div class="card-title">Podsumowanie analizy</div>
+      <div id="summary-content"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Zapis do Google Sheets</div>
+      <div class="config-panel">
+        <div class="field">
+          <label>URL Google Apps Script (Web App)</label>
+          <input type="text" id="gs-url" placeholder="https://script.google.com/macros/s/.../exec">
+        </div>
+        <p style="font-size:12px; color:var(--text-muted);">Nie masz jeszcze URL? Kliknij "Pokaż skrypt GAS" poniżej, skopiuj kod i wdróż go na <a href="https://script.google.com" target="_blank" style="color:var(--blue-text);">script.google.com</a>.</p>
+      </div>
+      <div id="save-status"></div>
+      <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <button class="btn btn-primary" onclick="saveToSheets()">Zapisz do Google Sheets</button>
+        <button class="btn btn-ghost" onclick="toggleScript()">Pokaż skrypt GAS</button>
+        <button class="btn btn-ghost" onclick="exportJSON()">Pobierz JSON</button>
+        <button class="btn btn-ghost" onclick="resetForm()">Nowa analiza</button>
+      </div>
+      <div id="gas-panel" style="display:none;">
+        <p style="font-size:13px; color:var(--text-muted); margin-top:1rem; margin-bottom:6px;">Wklej ten kod w Google Apps Script → Wdróż jako aplikację webową (dostęp: Wszyscy):</p>
+        <div class="code-block" id="gas-code-block"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Nav -->
+  <div class="nav-bar">
+    <div class="nav-hint" id="nav-hint"></div>
+    <div class="btn-group">
+      <button class="btn btn-ghost" id="btn-prev" onclick="prevStep()" style="display:none">← Wstecz</button>
+      <button class="btn btn-primary" id="btn-next" onclick="nextStep()">Dalej →</button>
+    </div>
+  </div>
+
+</div><!-- /container -->
+
+<script>
+const RAW_NAMES = {
+  "SUG-001": "Cukier biały krystaliczny",
+  "OIL-002": "Olej rzepakowy rafinowany",
+  "MLK-003": "Mleko odtłuszczone w proszku",
+  "WHT-004": "Mąka pszenna typ 500",
+  "SAL-005": "Sól warzona jodowana",
+  "STA-006": "Skrobia ziemniaczana modyfikowana",
+  "GLU-007": "Gluten pszenny vital"
+};
+
+const STEPS = [
+  { title: "Krok 1 z 7", desc: "Identyfikacja surowca" },
+  { title: "Krok 2 z 7", desc: "Logistyka — przyczyny i magazynowanie" },
+  { title: "Krok 3 z 7", desc: "R&D — analiza specyfikacji" },
+  { title: "Krok 4 z 7", desc: "Jakość i produkcja — metody badawcze" },
+  { title: "Krok 5 z 7", desc: "Sensoryka i zakupy" },
+  { title: "Krok 6 z 7", desc: "Decyzja końcowa i nowe parametry" },
+  { title: "Krok 7 z 7", desc: "Podsumowanie i zapis do Google Sheets" }
+];
+
+let cur = 1;
+
+function onCodeChange() {
+  const code = document.getElementById('raw-code').value;
+  document.getElementById('raw-name').value = RAW_NAMES[code] || '';
+}
+
+function updateUI() {
+  for (let i = 1; i <= 7; i++) {
+    const el = document.getElementById('step-' + i);
+    if (el) el.className = i === cur ? '' : 'step-hidden';
+  }
+  const bars = document.querySelectorAll('.ps');
+  bars.forEach((b, i) => {
+    b.className = 'ps' + (i < cur - 1 ? ' done' : i === cur - 1 ? ' active' : '');
+  });
+  document.getElementById('step-title').textContent = STEPS[cur - 1].title;
+  document.getElementById('step-desc').textContent = STEPS[cur - 1].desc;
+  document.getElementById('btn-prev').style.display = cur > 1 ? '' : 'none';
+  const btnNext = document.getElementById('btn-next');
+  btnNext.textContent = cur === 7 ? '✓ Gotowe' : 'Dalej →';
+  btnNext.style.display = cur === 7 ? 'none' : '';
+  document.getElementById('nav-hint').textContent = cur < 7 ? 'Możesz wrócić do poprzednich kroków w dowolnym momencie' : '';
+  if (cur === 7) buildSummary();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function nextStep() { if (cur < 7) { cur++; updateUI(); } }
+function prevStep() { if (cur > 1) { cur--; updateUI(); } }
+
+function gv(id) { const el = document.getElementById(id); return el ? el.value.trim() : ''; }
+function gr(name) { const el = document.querySelector('input[name="' + name + '"]:checked'); return el ? el.value : ''; }
+
+function buildSummary() {
+  const rows = [
+    ['Kod surowca', gv('raw-code')],
+    ['Nazwa surowca', gv('raw-name')],
+    ['Numer partii (LOT)', gv('lot-in')],
+    ['Oryginalna data ważności', gv('orig-exp')],
+    ['Ilość', gv('qty')],
+    ['Lokalizacja', gv('location')],
+    ['Przyczyna identyfikacji', gr('flag')],
+    ['Temperatura magazynowania', gv('temp') ? gv('temp') + ' °C' : ''],
+    ['Stan opakowania', gr('pkg')],
+    ['Osoba — Logistyka', gv('log-person')],
+    ['Osoba — R&D', gv('rd-person')],
+    ['Osoba — Jakość', gv('qa-person')],
+    ['Osoba — Produkcja', gv('prod-person')],
+    ['Wynik sensoryczny', gv('sen-grade')],
+    ['Możliwość sprzedaży', gr('sell')],
+    ['Decyzja końcowa', gr('decision')],
+    ['Numer protokołu', gv('proto-num')],
+    ['Data decyzji', gv('decision-date')],
+    ['Nowa data ważności', gv('new-exp')],
+    ['Nowy numer LOT', gv('new-lot')],
+  ];
+  const html = rows
+    .filter(r => r[1])
+    .map(r => `<div class="summary-row"><span class="sk">${r[0]}</span><span class="sv">${r[1]}</span></div>`)
+    .join('');
+  document.getElementById('summary-content').innerHTML = html || '<p style="color:var(--text-muted);font-size:14px;">Brak wypełnionych danych.</p>';
+}
+
+function collectData() {
+  return {
+    timestamp: new Date().toISOString(),
+    raw_code: gv('raw-code'), raw_name: gv('raw-name'),
+    lot_in: gv('lot-in'), orig_exp: gv('orig-exp'),
+    qty: gv('qty'), location: gv('location'),
+    flag_reason: gr('flag'), ident_date: gv('ident-date'),
+    cause: gv('cause'), loss_val: gv('loss-val'),
+    log_person: gv('log-person'), corr_action: gv('corr-action'),
+    temp: gv('temp'), pkg: gr('pkg'), openings: gv('openings'),
+    rd_params: gv('rd-params'), rd_recipes: gv('rd-recipes'),
+    rd_pct: gv('rd-pct'), rd_person: gv('rd-person'), rd_impact: gv('rd-impact'),
+    qa_methods: gv('qa-methods'), qa_budget: gv('qa-budget'),
+    qa_person: gv('qa-person'), qa_client_req: gv('qa-client-req'),
+    prod_mass: gv('prod-mass'), prod_person: gv('prod-person'),
+    sen_result: gv('sen-result'), sen_grade: gv('sen-grade'),
+    sen_date: gv('sen-date'), sen_person: gv('sen-person'),
+    sell_opt: gr('sell'), sell_price: gv('sell-price'),
+    decision: gr('decision'), decision_reason: gv('decision-reason'),
+    proto_num: gv('proto-num'), decision_date: gv('decision-date'),
+    new_exp: gv('new-exp'), new_lot: gv('new-lot'), label_note: gv('label-note')
+  };
+}
+
+async function saveToSheets() {
+  const url = gv('gs-url');
+  if (!url) {
+    document.getElementById('save-status').innerHTML = '<div class="alert alert-err">Podaj URL skryptu GAS przed zapisem.</div>';
+    return;
+  }
+  document.getElementById('save-status').innerHTML = '<div class="alert alert-info">Zapisywanie danych...</div>';
+  try {
+    await fetch(url, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(collectData())
+    });
+    document.getElementById('save-status').innerHTML = '<div class="alert alert-ok">Dane wysłane do Google Sheets. Sprawdź arkusz "Analizy_Surowcow".</div>';
+  } catch(e) {
+    document.getElementById('save-status').innerHTML = '<div class="alert alert-err">Błąd połączenia: ' + e.message + '</div>';
+  }
+}
+
+function exportJSON() {
+  const data = collectData();
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'analiza_' + (data.raw_code || 'surowiec') + '_' + (data.lot_in || 'LOT') + '.json';
+  a.click();
+}
+
+function resetForm() {
+  if (confirm('Czy na pewno chcesz zacząć nową analizę? Dane zostaną wyczyszczone.')) {
+    document.querySelectorAll('input:not([readonly]), select, textarea').forEach(el => el.value = '');
+    document.querySelectorAll('input[type=radio]').forEach(el => el.checked = false);
+    cur = 1;
+    updateUI();
+  }
+}
+
+const GAS_CODE = `function doPost(e) {
+  var data = JSON.parse(e.postData.contents);
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName("Analizy_Surowcow");
+  if (!sheet) { sheet = ss.insertSheet("Analizy_Surowcow"); }
+
+  var headers = [
+    "Timestamp","Kod surowca","Nazwa surowca","Nr partii LOT",
+    "Oryginalna data waznosci","Ilosc","Lokalizacja","Przyczyna identyfikacji",
+    "Data identyfikacji","Przyczyny pozostalosci","Wartosc strat PLN",
+    "Osoba Logistyka","Dzialania korygujace","Temperatura C","Opakowanie",
+    "Liczba otwarca","Parametry krytyczne","Receptury","Zawartosc pct",
+    "Osoba RD","Wplyw na produkt","Metody ISO","Budzet badan PLN",
+    "Osoba Jakosc","Wymagania klienta","Masa produktu kg","Osoba Produkcja",
+    "Wynik sensoryczny","Ocena sensoryczna","Data sensoryki","Osoba Sensoryka",
+    "Mozliwosc sprzedazy","Cena sprzedazy","Decyzja koncowa","Uzasadnienie",
+    "Nr protokolu","Data decyzji","Nowa data waznosci","Nowy LOT","Uwagi znakowanie"
+  ];
+
+  if (sheet.getLastRow() === 0) { sheet.appendRow(headers); }
+
+  sheet.appendRow([
+    data.timestamp, data.raw_code, data.raw_name, data.lot_in,
+    data.orig_exp, data.qty, data.location, data.flag_reason,
+    data.ident_date, data.cause, data.loss_val, data.log_person,
+    data.corr_action, data.temp, data.pkg, data.openings,
+    data.rd_params, data.rd_recipes, data.rd_pct, data.rd_person,
+    data.rd_impact, data.qa_methods, data.qa_budget, data.qa_person,
+    data.qa_client_req, data.prod_mass, data.prod_person, data.sen_result,
+    data.sen_grade, data.sen_date, data.sen_person, data.sell_opt,
+    data.sell_price, data.decision, data.decision_reason, data.proto_num,
+    data.decision_date, data.new_exp, data.new_lot, data.label_note
+  ]);
+
+  return ContentService
+    .createTextOutput(JSON.stringify({status:"ok"}))
+    .setMimeType(ContentService.MimeType.JSON);
+}`;
+
+function toggleScript() {
+  const panel = document.getElementById('gas-panel');
+  document.getElementById('gas-code-block').textContent = GAS_CODE;
+  panel.style.display = panel.style.display === 'none' ? '' : 'none';
+}
+
+updateUI();
+</script>
+</body>
+</html>
