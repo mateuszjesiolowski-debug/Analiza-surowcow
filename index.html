@@ -315,11 +315,11 @@
     <div class="card">
       <div class="card-title">Identyfikacja surowca</div>
       <div class="row3">
-        <div class="field">
-          <label>Kod surowca</label>
-          <select id="raw-code" onchange="onCodeChange()">
-            <option value="">— ładowanie... —</option>
-          </select>
+        <div class="field" style="position:relative;">
+          <label>Kod surowca — wpisz fragment</label>
+          <input type="text" id="raw-search" placeholder="np. CUK, AR, EKST..." autocomplete="off" oninput="onSearch()" onfocus="onSearch()">
+          <div id="raw-dropdown" style="display:none; position:absolute; top:100%; left:0; right:0; background:var(--white); border:1px solid var(--gray-border); border-radius:var(--radius-sm); max-height:220px; overflow-y:auto; z-index:999; box-shadow:0 4px 12px rgba(0,0,0,0.1);"></div>
+          <input type="hidden" id="raw-code">
         </div>
         <div class="field" style="grid-column: 2/4;">
           <label>Nazwa surowca (uzupełnia się automatycznie)</label>
@@ -608,35 +608,57 @@ const GAS_URL = 'https://script.google.com/a/macros/premiumrosa.eu/s/AKfycbxhXP9
 let RAW_NAMES = {};
 
 async function loadSurowce() {
-  const select = document.getElementById('raw-code');
   try {
     const resp = await fetch('surowce.csv');
     const text = await resp.text();
-    const lines = text.trim().split('\n').slice(1); // pomiń nagłówek
+    const lines = text.trim().split('\n').slice(1);
     RAW_NAMES = {};
-    select.innerHTML = '<option value="">— wybierz —</option>';
     lines.forEach(line => {
       const parts = line.split(';');
       const sku = parts[0] ? parts[0].trim().replace(/^"|"$/g, '') : '';
       const nazwa = parts[1] ? parts[1].trim().replace(/^"|"$/g, '') : '';
-      if (sku && nazwa) {
-        RAW_NAMES[sku] = nazwa;
-        const opt = document.createElement('option');
-        opt.value = sku;
-        opt.textContent = sku + ' — ' + nazwa;
-        select.appendChild(opt);
-      }
+      if (sku && nazwa) RAW_NAMES[sku] = nazwa;
     });
+    document.getElementById('raw-search').placeholder = 'Wpisz fragment kodu lub nazwy...';
   } catch(e) {
-    select.innerHTML = '<option value="">— błąd ładowania słownika —</option>';
+    document.getElementById('raw-search').placeholder = '— błąd ładowania słownika —';
     console.error(e);
   }
 }
 
-function onCodeChange() {
-  const code = document.getElementById('raw-code').value;
-  document.getElementById('raw-name').value = RAW_NAMES[code] || '';
+function onSearch() {
+  const query = document.getElementById('raw-search').value.toLowerCase().trim();
+  const dropdown = document.getElementById('raw-dropdown');
+  if (!query) { dropdown.style.display = 'none'; return; }
+  const matches = Object.entries(RAW_NAMES).filter(([sku, nazwa]) =>
+    sku.toLowerCase().includes(query) || nazwa.toLowerCase().includes(query)
+  ).slice(0, 30);
+  if (matches.length === 0) {
+    dropdown.innerHTML = '<div style="padding:10px 14px;font-size:13px;color:var(--text-muted);">Brak wyników</div>';
+  } else {
+    dropdown.innerHTML = matches.map(([sku, nazwa]) =>
+      `<div onclick="selectSurowiec('${sku.replace(/'/g,"\\'")}','${nazwa.replace(/'/g,"\\'")}'')"
+        style="padding:8px 14px;font-size:13px;cursor:pointer;border-bottom:1px solid var(--gray-border);"
+        onmouseover="this.style.background='var(--gray-bg)'" onmouseout="this.style.background=''">
+        <strong>${sku}</strong> — ${nazwa}
+      </div>`
+    ).join('');
+  }
+  dropdown.style.display = 'block';
 }
+
+function selectSurowiec(sku, nazwa) {
+  document.getElementById('raw-search').value = sku;
+  document.getElementById('raw-code').value = sku;
+  document.getElementById('raw-name').value = nazwa;
+  document.getElementById('raw-dropdown').style.display = 'none';
+}
+
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('#raw-search') && !e.target.closest('#raw-dropdown')) {
+    document.getElementById('raw-dropdown').style.display = 'none';
+  }
+});
 
 const STEPS = [
   { title: "Krok 1 z 7", desc: "Identyfikacja surowca" },
