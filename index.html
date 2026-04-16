@@ -3,648 +3,661 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Analiza wydłużenia terminu ważności surowca</title>
+<title>Analiza wydłużenia terminu ważności</title>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --green: #1D9E75; --green-light: #e1f5ee; --green-dark: #0f6e56;
+  --blue-bg: #e6f1fb; --blue-text: #185fa5;
+  --warn-bg: #faeeda; --warn-text: #854f0b;
+  --red-bg: #fcebeb; --red-text: #a32d2d;
+  --gray-bg: #f5f5f3; --gray-border: #e0ddd6;
+  --text: #1a1a18; --text-muted: #6b6b67;
+  --white: #fff; --radius: 10px; --radius-sm: 6px;
+}
+body { font-family: 'Segoe UI', system-ui, sans-serif; background: #f0ede6; color: var(--text); min-height: 100vh; }
 
-  :root {
-    --green: #1D9E75;
-    --green-light: #e1f5ee;
-    --green-dark: #0f6e56;
-    --blue-bg: #e6f1fb;
-    --blue-text: #185fa5;
-    --warn-bg: #faeeda;
-    --warn-text: #854f0b;
-    --gray-bg: #f5f5f3;
-    --gray-border: #e0ddd6;
-    --text: #1a1a18;
-    --text-muted: #6b6b67;
-    --white: #ffffff;
-    --radius: 10px;
-    --radius-sm: 6px;
-  }
+#login-screen { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 2rem; }
+.login-card { background: var(--white); border-radius: var(--radius); border: 1px solid var(--gray-border); padding: 3rem 2.5rem; max-width: 420px; width: 100%; text-align: center; }
+.login-card h1 { font-size: 22px; font-weight: 600; margin-bottom: 8px; }
+.login-card p { font-size: 14px; color: var(--text-muted); margin-bottom: 2rem; }
+.login-logo { font-size: 40px; margin-bottom: 1rem; }
+.login-err { font-size: 13px; color: var(--red-text); background: var(--red-bg); padding: 10px 14px; border-radius: var(--radius-sm); margin-top: 1rem; display: none; }
 
-  body {
-    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-    background: #f0ede6;
-    color: var(--text);
-    min-height: 100vh;
-    padding: 2rem 1rem;
-  }
+#app-screen { display: none; padding: 1.5rem 1rem; }
+.container { max-width: 820px; margin: 0 auto; }
 
-  .container {
-    max-width: 780px;
-    margin: 0 auto;
-  }
+.topbar { background: var(--white); border-radius: var(--radius); border: 1px solid var(--gray-border); padding: 1rem 1.5rem; margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+.topbar h1 { font-size: 18px; font-weight: 600; }
+.topbar p { font-size: 13px; color: var(--text-muted); }
+.topbar-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.user-info { font-size: 13px; text-align: right; }
+.user-info strong { display: block; color: var(--text); }
+.user-info span { color: var(--text-muted); }
+.dept-pill { font-size: 11px; padding: 3px 10px; border-radius: 20px; font-weight: 500; background: var(--blue-bg); color: var(--blue-text); }
+.dept-pill.admin { background: var(--warn-bg); color: var(--warn-text); }
 
-  /* Header */
-  .app-header {
-    background: var(--white);
-    border-radius: var(--radius);
-    padding: 1.5rem 2rem;
-    margin-bottom: 1.5rem;
-    border: 1px solid var(--gray-border);
-  }
-  .app-header h1 {
-    font-size: 22px;
-    font-weight: 600;
-    color: var(--text);
-    margin-bottom: 4px;
-  }
-  .app-header p {
-    font-size: 14px;
-    color: var(--text-muted);
-  }
+.dash-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+.dash-header h2 { font-size: 16px; font-weight: 600; }
+.analysis-list { display: flex; flex-direction: column; gap: 10px; }
+.analysis-card { background: var(--white); border-radius: var(--radius); border: 1px solid var(--gray-border); padding: 1.25rem 1.5rem; cursor: pointer; transition: border-color 0.15s; }
+.analysis-card:hover { border-color: var(--green); }
+.ac-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; gap: 12px; }
+.ac-top h3 { font-size: 15px; font-weight: 600; }
+.ac-meta { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+.status-badge { font-size: 11px; padding: 3px 10px; border-radius: 20px; font-weight: 500; white-space: nowrap; }
+.s-new { background: var(--blue-bg); color: var(--blue-text); }
+.s-progress { background: var(--warn-bg); color: var(--warn-text); }
+.s-done { background: var(--green-light); color: var(--green-dark); }
+.s-mine { background: #faeeda; color: #854f0b; border: 1px solid #f0c060; }
+.progress-dots { display: flex; gap: 4px; margin-top: 10px; }
+.dot { width: 26px; height: 5px; border-radius: 3px; background: var(--gray-bg); }
+.dot.done { background: var(--green); }
+.dot.active { background: var(--green); opacity: 0.5; }
+.empty-state { text-align: center; padding: 3rem; color: var(--text-muted); font-size: 14px; background: var(--white); border-radius: var(--radius); border: 1px solid var(--gray-border); }
 
-  /* Progress */
-  .progress-wrap {
-    background: var(--white);
-    border-radius: var(--radius);
-    padding: 1.25rem 2rem;
-    margin-bottom: 1.5rem;
-    border: 1px solid var(--gray-border);
-  }
-  .progress-steps {
-    display: flex;
-    gap: 6px;
-    margin-bottom: 10px;
-  }
-  .ps {
-    flex: 1;
-    height: 5px;
-    border-radius: 3px;
-    background: var(--gray-bg);
-    transition: background 0.3s;
-  }
-  .ps.done { background: var(--green); }
-  .ps.active { background: var(--green); opacity: 0.5; }
-  .progress-label {
-    font-size: 13px;
-    color: var(--text-muted);
-  }
-  .progress-label strong { color: var(--text); }
+#form-screen { display: none; }
+.back-btn { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; color: var(--text-muted); cursor: pointer; margin-bottom: 1rem; }
+.back-btn:hover { color: var(--text); }
 
-  /* Card */
-  .card {
-    background: var(--white);
-    border-radius: var(--radius);
-    border: 1px solid var(--gray-border);
-    padding: 1.5rem;
-    margin-bottom: 1rem;
-  }
-  .card-title {
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    margin-bottom: 1.25rem;
-  }
-  .dept-row {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 1.25rem;
-    font-size: 15px;
-    font-weight: 600;
-    color: var(--text);
-  }
-  .badge {
-    display: inline-block;
-    font-size: 11px;
-    padding: 3px 10px;
-    border-radius: 20px;
-    font-weight: 500;
-  }
-  .bd { background: var(--blue-bg); color: var(--blue-text); }
-  .bw { background: var(--warn-bg); color: var(--warn-text); }
-  .bg { background: var(--green-light); color: var(--green-dark); }
+.progress-wrap { background: var(--white); border-radius: var(--radius); border: 1px solid var(--gray-border); padding: 1.25rem 1.5rem; margin-bottom: 1.25rem; }
+.progress-steps { display: flex; gap: 4px; margin-bottom: 8px; }
+.ps { flex: 1; height: 5px; border-radius: 3px; background: var(--gray-bg); transition: background 0.3s; }
+.ps.done { background: var(--green); }
+.ps.active { background: var(--green); opacity: 0.55; }
+.progress-label { font-size: 13px; color: var(--text-muted); }
+.progress-label strong { color: var(--text); }
 
-  /* Form fields */
-  .field { margin-bottom: 1.1rem; }
-  .field:last-child { margin-bottom: 0; }
-  .field label {
-    display: block;
-    font-size: 13px;
-    color: var(--text-muted);
-    margin-bottom: 6px;
-    font-weight: 500;
-  }
-  .field input,
-  .field select,
-  .field textarea {
-    width: 100%;
-    padding: 9px 12px;
-    font-size: 14px;
-    font-family: inherit;
-    border: 1px solid var(--gray-border);
-    border-radius: var(--radius-sm);
-    background: var(--white);
-    color: var(--text);
-    transition: border-color 0.15s, box-shadow 0.15s;
-    outline: none;
-  }
-  .field input:focus,
-  .field select:focus,
-  .field textarea:focus {
-    border-color: var(--green);
-    box-shadow: 0 0 0 3px rgba(29,158,117,0.12);
-  }
-  .field input[readonly] {
-    background: var(--gray-bg);
-    color: var(--text-muted);
-  }
-  .field textarea { height: 80px; resize: vertical; }
+.card { background: var(--white); border-radius: var(--radius); border: 1px solid var(--gray-border); padding: 1.5rem; margin-bottom: 1rem; }
+.card-title { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 1.25rem; }
+.dept-row { display: flex; align-items: center; gap: 10px; margin-bottom: 1.25rem; font-size: 15px; font-weight: 600; }
+.badge { display: inline-block; font-size: 11px; padding: 3px 10px; border-radius: 20px; font-weight: 500; }
+.bd { background: var(--blue-bg); color: var(--blue-text); }
+.bw { background: var(--warn-bg); color: var(--warn-text); }
 
-  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-  .row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+.field { margin-bottom: 1.1rem; }
+.field:last-child { margin-bottom: 0; }
+.field label { display: block; font-size: 13px; color: var(--text-muted); font-weight: 500; margin-bottom: 5px; }
+.field input, .field select, .field textarea { width: 100%; padding: 9px 12px; font-size: 14px; font-family: inherit; border: 1px solid var(--gray-border); border-radius: var(--radius-sm); background: var(--white); color: var(--text); outline: none; transition: border-color 0.15s, box-shadow 0.15s; }
+.field input:focus, .field select:focus, .field textarea:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(29,158,117,0.12); }
+.field input[readonly], .field input:disabled, .field select:disabled, .field textarea:disabled { background: var(--gray-bg); color: var(--text-muted); cursor: not-allowed; }
+.field textarea { height: 80px; resize: vertical; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.row3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+@media(max-width:560px) { .row2,.row3 { grid-template-columns: 1fr; } }
 
-  @media (max-width: 560px) {
-    .row2, .row3 { grid-template-columns: 1fr; }
-  }
+.radio-group { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+.radio-option { display: flex; align-items: center; gap: 7px; font-size: 13px; cursor: pointer; padding: 7px 14px; border: 1px solid var(--gray-border); border-radius: 20px; transition: all 0.15s; }
+.radio-option:has(input:checked) { border-color: var(--green); background: var(--green-light); color: var(--green-dark); }
+.radio-option input { display: none; }
+.divider { border: none; border-top: 1px solid var(--gray-border); margin: 1.25rem 0; }
 
-  /* Radio group */
-  .radio-group { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
-  .radio-option {
-    display: flex;
-    align-items: center;
-    gap: 7px;
-    font-size: 13px;
-    color: var(--text);
-    cursor: pointer;
-    padding: 7px 14px;
-    border: 1px solid var(--gray-border);
-    border-radius: 20px;
-    transition: border-color 0.15s, background 0.15s;
-    user-select: none;
-  }
-  .radio-option:has(input:checked) {
-    border-color: var(--green);
-    background: var(--green-light);
-    color: var(--green-dark);
-  }
-  .radio-option input { display: none; }
+.nav-bar { background: var(--white); border-radius: var(--radius); border: 1px solid var(--gray-border); padding: 1rem 1.5rem; display: flex; justify-content: space-between; align-items: center; margin-top: 0.5rem; position: sticky; bottom: 1rem; }
+.btn { padding: 9px 20px; font-size: 14px; font-family: inherit; border-radius: var(--radius-sm); cursor: pointer; font-weight: 500; transition: all 0.15s; border: none; }
+.btn:active { transform: scale(0.97); }
+.btn-ghost { background: transparent; border: 1px solid var(--gray-border); color: var(--text); }
+.btn-ghost:hover { background: var(--gray-bg); }
+.btn-primary { background: var(--green); color: #fff; }
+.btn-primary:hover { background: var(--green-dark); }
+.btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-group { display: flex; gap: 10px; }
 
-  .divider { border: none; border-top: 1px solid var(--gray-border); margin: 1.25rem 0; }
+.alert { padding: 10px 14px; border-radius: var(--radius-sm); font-size: 13px; margin-top: 10px; }
+.alert-ok { background: var(--green-light); color: var(--green-dark); }
+.alert-err { background: var(--red-bg); color: var(--red-text); }
+.alert-info { background: var(--blue-bg); color: var(--blue-text); }
 
-  /* Nav */
-  .nav-bar {
-    background: var(--white);
-    border-radius: var(--radius);
-    border: 1px solid var(--gray-border);
-    padding: 1rem 1.5rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-top: 0.5rem;
-    position: sticky;
-    bottom: 1rem;
-  }
-  .nav-hint { font-size: 13px; color: var(--text-muted); }
-  .btn-group { display: flex; gap: 10px; }
-  .btn {
-    padding: 9px 20px;
-    font-size: 14px;
-    font-family: inherit;
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    font-weight: 500;
-    transition: opacity 0.15s, transform 0.1s;
-  }
-  .btn:active { transform: scale(0.97); }
-  .btn-ghost {
-    background: transparent;
-    border: 1px solid var(--gray-border);
-    color: var(--text);
-  }
-  .btn-ghost:hover { background: var(--gray-bg); }
-  .btn-primary {
-    background: var(--green);
-    border: none;
-    color: #fff;
-  }
-  .btn-primary:hover { background: var(--green-dark); }
-  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+.summary-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--gray-border); font-size: 14px; gap: 16px; }
+.summary-row:last-child { border-bottom: none; }
+.sk { color: var(--text-muted); flex-shrink: 0; }
+.sv { font-weight: 500; text-align: right; }
 
-  /* Summary */
-  .summary-row {
-    display: flex;
-    justify-content: space-between;
-    padding: 8px 0;
-    border-bottom: 1px solid var(--gray-border);
-    font-size: 14px;
-    gap: 16px;
-  }
-  .summary-row:last-child { border-bottom: none; }
-  .sk { color: var(--text-muted); flex-shrink: 0; }
-  .sv { font-weight: 500; color: var(--text); text-align: right; }
+.search-wrap { position: relative; }
+.search-dropdown { display: none; position: absolute; top: 100%; left: 0; right: 0; background: var(--white); border: 1px solid var(--gray-border); border-radius: var(--radius-sm); max-height: 220px; overflow-y: auto; z-index: 999; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+.search-item { padding: 8px 14px; font-size: 13px; cursor: pointer; border-bottom: 1px solid var(--gray-border); }
+.search-item:hover { background: var(--gray-bg); }
+.step-hidden { display: none; }
 
-  /* Alerts */
-  .alert {
-    padding: 10px 14px;
-    border-radius: var(--radius-sm);
-    font-size: 13px;
-    margin-top: 10px;
-  }
-  .alert-ok { background: var(--green-light); color: var(--green-dark); }
-  .alert-err { background: #fcebeb; color: #a32d2d; }
-  .alert-info { background: var(--blue-bg); color: var(--blue-text); }
-
-  /* GAS code */
-  .code-block {
-    background: #1e1e2e;
-    color: #cdd6f4;
-    border-radius: var(--radius-sm);
-    padding: 1.25rem;
-    font-size: 12px;
-    font-family: 'Consolas', 'Courier New', monospace;
-    overflow-x: auto;
-    white-space: pre;
-    line-height: 1.7;
-    margin-top: 1rem;
-  }
-  .step-hidden { display: none; }
-
-  /* Config panel */
-  .config-toggle {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 13px;
-    color: var(--blue-text);
-    cursor: pointer;
-    margin-bottom: 1rem;
-    text-decoration: underline;
-  }
-  .config-panel {
-    background: var(--gray-bg);
-    border-radius: var(--radius-sm);
-    padding: 1rem;
-    margin-bottom: 1rem;
-    border: 1px solid var(--gray-border);
-  }
-  .config-panel .field { margin-bottom: 0.75rem; }
+.locked-info { background: var(--gray-bg); border-radius: var(--radius-sm); padding: 12px 16px; font-size: 13px; color: var(--text-muted); margin-bottom: 1rem; border-left: 3px solid var(--gray-border); }
 </style>
 </head>
 <body>
 
-<div class="container">
-
-  <!-- Header -->
-  <div class="app-header">
-    <h1>Analiza wydłużenia terminu ważności surowca</h1>
-    <p>Formularz obejmuje 7 kroków procesu — od identyfikacji surowca po decyzję końcową i nowe parametry partii</p>
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">🌿</div>
+    <h1>Premium Rosa</h1>
+    <p>System analizy wydłużenia terminu ważności surowców.<br>Zaloguj się kontem firmowym.</p>
+    <div id="g_id_onload"
+      data-client_id="GOOGLE_CLIENT_ID"
+      data-callback="onGoogleLogin"
+      data-auto_select="false"
+      data-context="signin">
+    </div>
+    <div class="g_id_signin"
+      data-type="standard"
+      data-size="large"
+      data-theme="outline"
+      data-text="signin_with"
+      data-shape="rectangular"
+      data-logo_alignment="left"
+      data-width="320">
+    </div>
+    <div class="login-err" id="login-err"></div>
   </div>
+</div>
 
-  <!-- Progress -->
-  <div class="progress-wrap">
-    <div class="progress-steps" id="prog-bar">
-      <div class="ps active"></div>
-      <div class="ps"></div>
-      <div class="ps"></div>
-      <div class="ps"></div>
-      <div class="ps"></div>
-      <div class="ps"></div>
-      <div class="ps"></div>
-    </div>
-    <div class="progress-label"><strong id="step-title">Krok 1 z 7</strong> — <span id="step-desc">Identyfikacja surowca</span></div>
-  </div>
+<!-- APP -->
+<div id="app-screen">
+  <div class="container">
 
-  <!-- ===== STEP 1 ===== -->
-  <div id="step-1">
-    <div class="card">
-      <div class="card-title">Identyfikacja surowca</div>
-      <div class="row3">
-        <div class="field" style="position:relative;">
-          <label>Kod surowca — wpisz fragment</label>
-          <input type="text" id="raw-search" placeholder="np. CUK, AR, EKST..." autocomplete="off" oninput="onSearch()" onfocus="onSearch()">
-          <div id="raw-dropdown" style="display:none; position:absolute; top:100%; left:0; right:0; background:var(--white); border:1px solid var(--gray-border); border-radius:var(--radius-sm); max-height:220px; overflow-y:auto; z-index:999; box-shadow:0 4px 12px rgba(0,0,0,0.1);"></div>
-          <input type="hidden" id="raw-code">
-        </div>
-        <div class="field" style="grid-column: 2/4;">
-          <label>Nazwa surowca (uzupełnia się automatycznie)</label>
-          <input type="text" id="raw-name" readonly placeholder="— wybierz kod surowca —">
-        </div>
+    <div class="topbar">
+      <div>
+        <h1>Analiza terminu ważności surowców</h1>
+        <p>Panel zarządzania analizami</p>
       </div>
-      <div class="row2">
-        <div class="field">
-          <label>Numer partii (LOT)</label>
-          <input type="text" id="lot-in" placeholder="np. LOT-2024-0312-A">
+      <div class="topbar-right">
+        <div class="user-info">
+          <strong id="user-name-top"></strong>
+          <span id="user-email-top"></span>
         </div>
-        <div class="field">
-          <label>Oryginalna data ważności</label>
-          <input type="date" id="orig-exp">
-        </div>
-      </div>
-      <div class="row2">
-        <div class="field">
-          <label>Ilość pozostała (kg / L / szt.)</label>
-          <input type="text" id="qty" placeholder="np. 250 kg">
-        </div>
-        <div class="field">
-          <label>Lokalizacja w magazynie</label>
-          <input type="text" id="location" placeholder="np. Regał A3, Komora chłodnicza 2">
-        </div>
+        <span class="dept-pill" id="dept-pill-top"></span>
+        <button class="btn btn-ghost" onclick="logout()" style="font-size:13px;padding:6px 14px;">Wyloguj</button>
       </div>
     </div>
-    <div class="card">
-      <div class="card-title">Źródło identyfikacji — Qguar</div>
-      <div class="field">
-        <label>Przyczyna identyfikacji</label>
-        <div class="radio-group">
-          <label class="radio-option"><input type="radio" name="flag" value="system">Automatyczna flaga systemu</label>
-          <label class="radio-option"><input type="radio" name="flag" value="manual">Ręczna identyfikacja</label>
-          <label class="radio-option"><input type="radio" name="flag" value="audit">Kontrola magazynu</label>
-        </div>
-      </div>
-      <div class="field" style="margin-top:1rem;">
-        <label>Data identyfikacji</label>
-        <input type="date" id="ident-date">
-      </div>
-    </div>
-  </div>
 
-  <!-- ===== STEP 2 ===== -->
-  <div id="step-2" class="step-hidden">
-    <div class="card">
-      <div class="dept-row"><span class="badge bd">Dział Logistyki</span> Przyczyny i szacowanie strat</div>
-      <div class="field">
-        <label>Przyczyny powstania pozostałości surowca</label>
-        <textarea id="cause" placeholder="Nadmierne zamówienie, zmiana receptury, opóźnienie produkcji..."></textarea>
-      </div>
-      <div class="row2">
-        <div class="field">
-          <label>Szacowana wartość strat (PLN)</label>
-          <input type="number" id="loss-val" placeholder="0.00" step="0.01">
-        </div>
-        <div class="field">
-          <label>Osoba odpowiedzialna</label>
-          <input type="text" id="log-person" placeholder="Imię i nazwisko">
+    <!-- DASHBOARD -->
+    <div id="dashboard">
+      <div class="dash-header">
+        <h2>Analizy surowców</h2>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-ghost" onclick="loadAnalyses()" style="font-size:13px;padding:7px 14px;">↻ Odśwież</button>
+          <button class="btn btn-primary" id="btn-new-analysis" onclick="startNewAnalysis()" style="display:none;">+ Nowa analiza</button>
         </div>
       </div>
-      <div class="field">
-        <label>Propozycja działań korygujących</label>
-        <textarea id="corr-action" placeholder="Opisz proponowane działania..."></textarea>
+      <div id="analyses-list" class="analysis-list">
+        <div class="empty-state">Ładowanie...</div>
       </div>
     </div>
-    <div class="card">
-      <div class="card-title">Warunki magazynowania</div>
-      <div class="row3">
-        <div class="field">
-          <label>Temperatura (°C)</label>
-          <input type="number" id="temp" placeholder="np. 4">
+
+    <!-- FORM -->
+    <div id="form-screen">
+      <div class="back-btn" onclick="showDashboard()">← Powrót do listy</div>
+
+      <div class="progress-wrap">
+        <div class="progress-steps" id="prog-bar">
+          <div class="ps active"></div><div class="ps"></div><div class="ps"></div>
+          <div class="ps"></div><div class="ps"></div><div class="ps"></div><div class="ps"></div>
         </div>
-        <div class="field">
-          <label>Stan opakowania</label>
-          <div class="radio-group" style="margin-top:4px;">
-            <label class="radio-option"><input type="radio" name="pkg" value="zamknięte">Zamknięte</label>
-            <label class="radio-option"><input type="radio" name="pkg" value="otwarte">Otwarte</label>
+        <div class="progress-label"><strong id="step-title">Krok 1 z 7</strong> — <span id="step-desc"></span></div>
+      </div>
+
+      <!-- STEP 1 -->
+      <div id="step-1">
+        <div class="card">
+          <div class="card-title">Identyfikacja surowca</div>
+          <div class="row3">
+            <div class="field search-wrap">
+              <label>Kod surowca</label>
+              <input type="text" id="raw-search" placeholder="Wpisz fragment kodu lub nazwy..." autocomplete="off" oninput="onSearch()" onfocus="onSearch()">
+              <div class="search-dropdown" id="raw-dropdown"></div>
+              <input type="hidden" id="raw-code">
+            </div>
+            <div class="field" style="grid-column:2/4;">
+              <label>Nazwa surowca</label>
+              <input type="text" id="raw-name" readonly placeholder="— wybierz kod surowca —">
+            </div>
+          </div>
+          <div class="row2">
+            <div class="field"><label>Numer partii (LOT)</label><input type="text" id="lot-in" placeholder="np. LOT-2024-0312-A"></div>
+            <div class="field"><label>Oryginalna data ważności</label><input type="date" id="orig-exp"></div>
+          </div>
+          <div class="row2">
+            <div class="field"><label>Ilość pozostała (kg / L / szt.)</label><input type="text" id="qty" placeholder="np. 250 kg"></div>
+            <div class="field"><label>Lokalizacja w magazynie</label><input type="text" id="location" placeholder="np. Regał A3, Komora 2"></div>
           </div>
         </div>
-        <div class="field">
-          <label>Liczba otwarć</label>
-          <input type="number" id="openings" placeholder="0" min="0">
+        <div class="card">
+          <div class="card-title">Źródło identyfikacji — Qguar</div>
+          <div class="field"><label>Przyczyna identyfikacji</label>
+            <div class="radio-group">
+              <label class="radio-option"><input type="radio" name="flag" value="system">Automatyczna flaga systemu</label>
+              <label class="radio-option"><input type="radio" name="flag" value="manual">Ręczna identyfikacja</label>
+              <label class="radio-option"><input type="radio" name="flag" value="audit">Kontrola magazynu</label>
+            </div>
+          </div>
+          <div class="field" style="margin-top:1rem;max-width:240px;"><label>Data identyfikacji</label><input type="date" id="ident-date"></div>
         </div>
       </div>
-    </div>
-  </div>
 
-  <!-- ===== STEP 3 ===== -->
-  <div id="step-3" class="step-hidden">
-    <div class="card">
-      <div class="dept-row"><span class="badge bd">Dział R&D</span> Analiza specyfikacji surowca</div>
-      <div class="field">
-        <label>Parametry krytyczne zmieniające się w czasie</label>
-        <textarea id="rd-params" placeholder="Barwa, zapach, lepkość, aktywność wody, pH..."></textarea>
-      </div>
-      <div class="field">
-        <label>Receptury zawierające ten składnik</label>
-        <textarea id="rd-recipes" placeholder="Lista receptur z numerami..."></textarea>
-      </div>
-      <div class="row2">
-        <div class="field">
-          <label>Procentowa zawartość w produkcie gotowym (%)</label>
-          <input type="number" id="rd-pct" placeholder="np. 3.5" step="0.01">
+      <!-- STEP 2 -->
+      <div id="step-2" class="step-hidden">
+        <div class="card">
+          <div class="dept-row"><span class="badge bd">Dział Logistyki</span>Przyczyny i szacowanie strat</div>
+          <div class="field"><label>Przyczyny pozostałości surowca</label><textarea id="cause" placeholder="Nadmierne zamówienie, zmiana receptury, opóźnienie produkcji..."></textarea></div>
+          <div class="row2">
+            <div class="field"><label>Szacowana wartość strat (PLN)</label><input type="number" id="loss-val" placeholder="0.00" step="0.01"></div>
+            <div class="field"><label>Osoba odpowiedzialna</label><input type="text" id="log-person" placeholder="Imię i nazwisko"></div>
+          </div>
+          <div class="field"><label>Propozycja działań korygujących</label><textarea id="corr-action" placeholder="Opisz proponowane działania..."></textarea></div>
         </div>
-        <div class="field">
-          <label>Osoba odpowiedzialna</label>
-          <input type="text" id="rd-person" placeholder="Imię i nazwisko">
+        <div class="card">
+          <div class="card-title">Warunki magazynowania</div>
+          <div class="row3">
+            <div class="field"><label>Temperatura (°C)</label><input type="number" id="temp" placeholder="np. 4"></div>
+            <div class="field"><label>Stan opakowania</label>
+              <div class="radio-group" style="margin-top:4px;">
+                <label class="radio-option"><input type="radio" name="pkg" value="zamknięte">Zamknięte</label>
+                <label class="radio-option"><input type="radio" name="pkg" value="otwarte">Otwarte</label>
+              </div>
+            </div>
+            <div class="field"><label>Liczba otwarć</label><input type="number" id="openings" placeholder="0" min="0"></div>
+          </div>
         </div>
       </div>
-      <div class="field">
-        <label>Wpływ na produkt gotowy po upływie terminu</label>
-        <textarea id="rd-impact" placeholder="Potencjalny wpływ na jakość, bezpieczeństwo, właściwości produktu..."></textarea>
-      </div>
-    </div>
-  </div>
 
-  <!-- ===== STEP 4 ===== -->
-  <div id="step-4" class="step-hidden">
-    <div class="card">
-      <div class="dept-row"><span class="badge bd">Dział Jakości</span> Metody badawcze</div>
-      <div class="field">
-        <label>Określone metody badawcze (normy ISO)</label>
-        <textarea id="qa-methods" placeholder="np. ISO 6888-1, ISO 4833, metody własne..."></textarea>
-      </div>
-      <div class="row2">
-        <div class="field">
-          <label>Budżet badań (PLN)</label>
-          <input type="number" id="qa-budget" placeholder="0.00" step="0.01">
-        </div>
-        <div class="field">
-          <label>Osoba odpowiedzialna</label>
-          <input type="text" id="qa-person" placeholder="Imię i nazwisko">
+      <!-- STEP 3 -->
+      <div id="step-3" class="step-hidden">
+        <div class="card">
+          <div class="dept-row"><span class="badge bd">Dział R&D</span>Analiza specyfikacji surowca</div>
+          <div class="field"><label>Parametry krytyczne zmieniające się w czasie</label><textarea id="rd-params" placeholder="Barwa, zapach, lepkość, aktywność wody, pH..."></textarea></div>
+          <div class="field"><label>Receptury zawierające ten składnik</label><textarea id="rd-recipes" placeholder="Lista receptur z numerami..."></textarea></div>
+          <div class="row2">
+            <div class="field"><label>Procentowa zawartość w produkcie gotowym (%)</label><input type="number" id="rd-pct" placeholder="np. 3.5" step="0.01"></div>
+            <div class="field"><label>Osoba odpowiedzialna</label><input type="text" id="rd-person" placeholder="Imię i nazwisko"></div>
+          </div>
+          <div class="field"><label>Wpływ na produkt gotowy po upływie terminu</label><textarea id="rd-impact" placeholder="Potencjalny wpływ na jakość, bezpieczeństwo..."></textarea></div>
         </div>
       </div>
-      <div class="field">
-        <label>Wymagania klienta uwzględnione w badaniach</label>
-        <textarea id="qa-client-req" placeholder="Opisz wymagania klienta..."></textarea>
-      </div>
-    </div>
-    <div class="card">
-      <div class="dept-row"><span class="badge bd">Kierownik Produkcji</span> Ocena przydatności do produkcji</div>
-      <div class="row2">
-        <div class="field">
-          <label>Masa produktu zagrożonego (kg)</label>
-          <input type="number" id="prod-mass" placeholder="0" min="0">
-        </div>
-        <div class="field">
-          <label>Osoba odpowiedzialna</label>
-          <input type="text" id="prod-person" placeholder="Imię i nazwisko">
-        </div>
-      </div>
-    </div>
-  </div>
 
-  <!-- ===== STEP 5 ===== -->
-  <div id="step-5" class="step-hidden">
-    <div class="card">
-      <div class="dept-row"><span class="badge bd">Zespół Sensoryczny</span> Ocena sensoryczna próbek</div>
-      <div class="field">
-        <label>Wyniki oceny sensorycznej</label>
-        <textarea id="sen-result" placeholder="Barwa, zapach, smak, konsystencja, wygląd..."></textarea>
-      </div>
-      <div class="row2">
-        <div class="field">
-          <label>Ocena ogólna</label>
-          <select id="sen-grade">
-            <option value="">— wybierz —</option>
-            <option value="pozytywna">Pozytywna — brak odchyleń</option>
-            <option value="warunkowo_pozytywna">Warunkowo pozytywna — drobne odchylenia</option>
-            <option value="negatywna">Negatywna — odchylenia dyskwalifikujące</option>
-          </select>
+      <!-- STEP 4 -->
+      <div id="step-4" class="step-hidden">
+        <div class="card">
+          <div class="dept-row"><span class="badge bd">Dział Jakości</span>Metody badawcze</div>
+          <div class="field"><label>Metody badawcze (normy ISO)</label><textarea id="qa-methods" placeholder="np. ISO 6888-1, ISO 4833..."></textarea></div>
+          <div class="row2">
+            <div class="field"><label>Budżet badań (PLN)</label><input type="number" id="qa-budget" placeholder="0.00" step="0.01"></div>
+            <div class="field"><label>Osoba odpowiedzialna</label><input type="text" id="qa-person" placeholder="Imię i nazwisko"></div>
+          </div>
+          <div class="field"><label>Wymagania klienta</label><textarea id="qa-client-req" placeholder="Opisz wymagania klienta..."></textarea></div>
         </div>
-        <div class="field">
-          <label>Data przeprowadzenia oceny</label>
-          <input type="date" id="sen-date">
+        <div class="card">
+          <div class="dept-row"><span class="badge bd">Kierownik Produkcji</span>Ocena przydatności</div>
+          <div class="row2">
+            <div class="field"><label>Masa produktu zagrożonego (kg)</label><input type="number" id="prod-mass" placeholder="0" min="0"></div>
+            <div class="field"><label>Osoba odpowiedzialna</label><input type="text" id="prod-person" placeholder="Imię i nazwisko"></div>
+          </div>
         </div>
       </div>
-      <div class="field">
-        <label>Osoba odpowiedzialna</label>
-        <input type="text" id="sen-person" placeholder="Imię i nazwisko">
-      </div>
-    </div>
-    <div class="card">
-      <div class="dept-row"><span class="badge bd">Dział Zakupów</span> Ocena możliwości sprzedaży</div>
-      <div class="field">
-        <label>Opcja</label>
-        <div class="radio-group">
-          <label class="radio-option"><input type="radio" name="sell" value="tak">Możliwa sprzedaż</label>
-          <label class="radio-option"><input type="radio" name="sell" value="nie">Brak możliwości sprzedaży</label>
-          <label class="radio-option"><input type="radio" name="sell" value="czesciowa">Częściowa sprzedaż</label>
-        </div>
-      </div>
-      <div class="field" style="margin-top:1rem;">
-        <label>Szacowana cena sprzedaży (PLN/kg lub PLN/L)</label>
-        <input type="number" id="sell-price" placeholder="0.00" step="0.01">
-      </div>
-    </div>
-  </div>
 
-  <!-- ===== STEP 6 ===== -->
-  <div id="step-6" class="step-hidden">
-    <div class="card">
-      <div class="dept-row"><span class="badge bw">Dyrektor Operacyjny</span> Wyniki oceny ryzyka i decyzja</div>
-      <div class="field">
-        <label>Decyzja końcowa</label>
-        <div class="radio-group">
-          <label class="radio-option"><input type="radio" name="decision" value="uzywac">Używać w produkcji</label>
-          <label class="radio-option"><input type="radio" name="decision" value="sprzedac">Sprzedać surowiec</label>
-          <label class="radio-option"><input type="radio" name="decision" value="utylizacja">Utylizacja / odpad</label>
+      <!-- STEP 5 -->
+      <div id="step-5" class="step-hidden">
+        <div class="card">
+          <div class="dept-row"><span class="badge bd">Zespół Sensoryczny</span>Ocena sensoryczna próbek</div>
+          <div class="field"><label>Wyniki oceny sensorycznej</label><textarea id="sen-result" placeholder="Barwa, zapach, smak, konsystencja, wygląd..."></textarea></div>
+          <div class="row2">
+            <div class="field"><label>Ocena ogólna</label>
+              <select id="sen-grade">
+                <option value="">— wybierz —</option>
+                <option value="pozytywna">Pozytywna — brak odchyleń</option>
+                <option value="warunkowo_pozytywna">Warunkowo pozytywna</option>
+                <option value="negatywna">Negatywna — dyskwalifikująca</option>
+              </select>
+            </div>
+            <div class="field"><label>Data oceny</label><input type="date" id="sen-date"></div>
+          </div>
+          <div class="field"><label>Osoba odpowiedzialna</label><input type="text" id="sen-person" placeholder="Imię i nazwisko"></div>
+        </div>
+        <div class="card">
+          <div class="dept-row"><span class="badge bd">Dział Zakupów</span>Ocena możliwości sprzedaży</div>
+          <div class="field"><label>Możliwość sprzedaży</label>
+            <div class="radio-group">
+              <label class="radio-option"><input type="radio" name="sell" value="tak">Możliwa sprzedaż</label>
+              <label class="radio-option"><input type="radio" name="sell" value="nie">Brak możliwości</label>
+              <label class="radio-option"><input type="radio" name="sell" value="czesciowa">Częściowa sprzedaż</label>
+            </div>
+          </div>
+          <div class="field" style="margin-top:1rem;max-width:240px;"><label>Cena sprzedaży (PLN/kg lub PLN/L)</label><input type="number" id="sell-price" placeholder="0.00" step="0.01"></div>
         </div>
       </div>
-      <div class="field" style="margin-top:1rem;">
-        <label>Uzasadnienie decyzji</label>
-        <textarea id="decision-reason" placeholder="Pełne uzasadnienie w oparciu o wyniki badań i ocenę ryzyka..."></textarea>
-      </div>
-      <div class="row2">
-        <div class="field">
-          <label>Numer protokołu oceny ryzyka</label>
-          <input type="text" id="proto-num" placeholder="np. PR-2024-0056">
-        </div>
-        <div class="field">
-          <label>Data decyzji</label>
-          <input type="date" id="decision-date">
-        </div>
-      </div>
-    </div>
-    <div class="card">
-      <div class="card-title">Nowe parametry surowca (jeśli dopuszczony do produkcji)</div>
-      <div class="row2">
-        <div class="field">
-          <label>Nowa data przydatności (wydłużona)</label>
-          <input type="date" id="new-exp">
-        </div>
-        <div class="field">
-          <label>Nowy numer partii (LOT)</label>
-          <input type="text" id="new-lot" placeholder="np. LOT-2024-0312-A-EXT1">
-        </div>
-      </div>
-      <div class="field">
-        <label>Uwagi do znakowania</label>
-        <input type="text" id="label-note" placeholder="np. Używać do 30.06.2025 zgodnie z protokołem PR-2024-0056">
-      </div>
-    </div>
-  </div>
 
-  <!-- ===== STEP 7 ===== -->
-  <div id="step-7" class="step-hidden">
-    <div class="card">
-      <div class="card-title">Podsumowanie analizy</div>
-      <div id="summary-content"></div>
-    </div>
-    <div class="card">
-      <div class="card-title">Zapis do Google Sheets</div>
-      <div class="config-panel">
-        <p style="font-size:13px; color:var(--text-muted);">Dane zostaną zapisane automatycznie do firmowego arkusza Google Sheets.</p>
+      <!-- STEP 6 -->
+      <div id="step-6" class="step-hidden">
+        <div class="card">
+          <div class="dept-row"><span class="badge bw">Dyrektor Operacyjny</span>Wyniki oceny ryzyka i decyzja</div>
+          <div class="field"><label>Decyzja końcowa</label>
+            <div class="radio-group">
+              <label class="radio-option"><input type="radio" name="decision" value="uzywac">Używać w produkcji</label>
+              <label class="radio-option"><input type="radio" name="decision" value="sprzedac">Sprzedać surowiec</label>
+              <label class="radio-option"><input type="radio" name="decision" value="utylizacja">Utylizacja / odpad</label>
+            </div>
+          </div>
+          <div class="field" style="margin-top:1rem;"><label>Uzasadnienie decyzji</label><textarea id="decision-reason" placeholder="Pełne uzasadnienie w oparciu o wyniki badań..."></textarea></div>
+          <div class="row2">
+            <div class="field"><label>Numer protokołu oceny ryzyka</label><input type="text" id="proto-num" placeholder="np. PR-2024-0056"></div>
+            <div class="field"><label>Data decyzji</label><input type="date" id="decision-date"></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Nowe parametry surowca</div>
+          <div class="row2">
+            <div class="field"><label>Nowa data ważności (wydłużona)</label><input type="date" id="new-exp"></div>
+            <div class="field"><label>Nowy numer partii (LOT)</label><input type="text" id="new-lot" placeholder="np. LOT-2024-0312-A-EXT1"></div>
+          </div>
+          <div class="field"><label>Uwagi do znakowania</label><input type="text" id="label-note" placeholder="np. Używać do ... zgodnie z protokołem ..."></div>
+        </div>
       </div>
-      <div id="save-status"></div>
-      <div style="display:flex; gap:10px; flex-wrap:wrap;">
-        <button class="btn btn-primary" onclick="saveToSheets()">Zapisz do Google Sheets</button>
-        <button class="btn btn-ghost" onclick="toggleScript()">Pokaż skrypt GAS</button>
-        <button class="btn btn-ghost" onclick="exportJSON()">Pobierz JSON</button>
-        <button class="btn btn-ghost" onclick="resetForm()">Nowa analiza</button>
-      </div>
-      <div id="gas-panel" style="display:none;">
-        <p style="font-size:13px; color:var(--text-muted); margin-top:1rem; margin-bottom:6px;">Wklej ten kod w Google Apps Script → Wdróż jako aplikację webową (dostęp: Wszyscy):</p>
-        <div class="code-block" id="gas-code-block"></div>
-      </div>
-    </div>
-  </div>
 
-  <!-- Nav -->
-  <div class="nav-bar">
-    <div class="nav-hint" id="nav-hint"></div>
-    <div class="btn-group">
-      <button class="btn btn-ghost" id="btn-prev" onclick="prevStep()" style="display:none">← Wstecz</button>
-      <button class="btn btn-primary" id="btn-next" onclick="nextStep()">Dalej →</button>
-    </div>
-  </div>
+      <!-- STEP 7 -->
+      <div id="step-7" class="step-hidden">
+        <div class="card">
+          <div class="card-title">Podsumowanie analizy</div>
+          <div id="summary-content"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Zapis i powiadomienie</div>
+          <p style="font-size:14px;color:var(--text-muted);margin-bottom:1rem;">Po kliknięciu "Zatwierdź i wyślij" dane zostaną zapisane w Google Sheets, a następny dział otrzyma powiadomienie email.</p>
+          <div id="save-status"></div>
+          <button class="btn btn-primary" id="btn-submit" onclick="submitAnalysis()" style="margin-top:1rem;">✓ Zatwierdź i wyślij</button>
+        </div>
+      </div>
 
-</div><!-- /container -->
+      <div class="nav-bar">
+        <div style="font-size:13px;color:var(--text-muted);" id="nav-hint"></div>
+        <div class="btn-group">
+          <button class="btn btn-ghost" id="btn-prev" onclick="prevStep()" style="display:none;">← Wstecz</button>
+          <button class="btn btn-primary" id="btn-next" onclick="nextStep()">Dalej →</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
 
 <script>
+// ═══════════════════════
+// CONFIG
+// ═══════════════════════
 const GAS_URL = 'https://script.google.com/a/macros/premiumrosa.eu/s/AKfycbxhXP9DifxlyPBvLVpt5qCGB24z9mil17eu0VdyFPjgX3mYTLNXB107xVfug1bO0PFszw/exec';
+const ALLOWED_DOMAIN = 'premiumrosa.eu';
+
+const DEPT_STEPS = {
+  'Logistyka': 2, 'R&D': 3, 'Jakość': 4,
+  'Produkcja': 4, 'Sensoryka': 5, 'Zakupy': 5, 'Zarząd': 6
+};
+
+const STEP_NAMES = ['','Identyfikacja surowca','Logistyka — przyczyny','R&D — specyfikacja','Jakość i produkcja','Sensoryka i zakupy','Decyzja końcowa','Podsumowanie'];
+
+// ═══════════════════════
+// STATE
+// ═══════════════════════
+let currentUser = null;
+let currentUserInfo = null;
+let USERS = {};
 let RAW_NAMES = {};
+let currentAnalysisId = null;
+let currentStep = 1;
+let activeAnalysisStep = 1;
+
+// ═══════════════════════
+// AUTH
+// ═══════════════════════
+function onGoogleLogin(response) {
+  const payload = parseJwt(response.credential);
+  const email = (payload.email || '').toLowerCase();
+  if (!email.endsWith('@' + ALLOWED_DOMAIN)) {
+    showLoginErr('Dostęp tylko dla kont @' + ALLOWED_DOMAIN + '. Twój email: ' + email);
+    return;
+  }
+  currentUser = { email, name: payload.name, picture: payload.picture };
+  initApp();
+}
+
+function parseJwt(token) {
+  return JSON.parse(atob(token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));
+}
+
+function showLoginErr(msg) {
+  const el = document.getElementById('login-err');
+  el.textContent = msg; el.style.display = 'block';
+}
+
+function logout() {
+  currentUser = null; currentUserInfo = null;
+  document.getElementById('app-screen').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+}
+
+// ═══════════════════════
+// INIT
+// ═══════════════════════
+async function initApp() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app-screen').style.display = 'block';
+  await Promise.all([loadUsers(), loadSurowce()]);
+
+  currentUserInfo = USERS[currentUser.email] || null;
+  if (!currentUserInfo) {
+    showLoginErr('Twoje konto (' + currentUser.email + ') nie ma przypisanych uprawnień. Skontaktuj się z administratorem.');
+    logout(); return;
+  }
+
+  document.getElementById('user-name-top').textContent = currentUser.name;
+  document.getElementById('user-email-top').textContent = currentUser.email;
+  const pill = document.getElementById('dept-pill-top');
+  pill.textContent = currentUserInfo.rola === 'admin' ? 'Admin · ' + currentUserInfo.dzial : currentUserInfo.dzial;
+  if (currentUserInfo.rola === 'admin') pill.classList.add('admin');
+
+  if (currentUserInfo.inicjator === 'tak' || currentUserInfo.rola === 'admin') {
+    document.getElementById('btn-new-analysis').style.display = '';
+  }
+  loadAnalyses();
+}
+
+// ═══════════════════════
+// LOAD DATA
+// ═══════════════════════
+async function loadUsers() {
+  try {
+    const text = await (await fetch('dzialy.csv')).text();
+    USERS = {};
+    text.trim().split('\n').slice(1).forEach(line => {
+      const p = line.split(';').map(s => s.trim().replace(/^"|"$/g,''));
+      if (p[0]) USERS[p[0].toLowerCase()] = { imie: p[1]||'', dzial: p[2]||'', rola: p[3]||'użytkownik', inicjator: p[4]||'nie' };
+    });
+  } catch(e) { console.error('Błąd dzialy.csv:', e); }
+}
 
 async function loadSurowce() {
   try {
-    const resp = await fetch('surowce.csv');
-    const text = await resp.text();
-    const lines = text.trim().split('\n').slice(1);
+    const text = await (await fetch('surowce.csv')).text();
     RAW_NAMES = {};
-    lines.forEach(line => {
-      const parts = line.split(';');
-      const sku = parts[0] ? parts[0].trim().replace(/^"|"$/g, '') : '';
-      const nazwa = parts[1] ? parts[1].trim().replace(/^"|"$/g, '') : '';
+    text.trim().split('\n').slice(1).forEach(line => {
+      const p = line.split(';');
+      const sku = p[0] ? p[0].trim().replace(/^"|"$/g,'') : '';
+      const nazwa = p[1] ? p[1].trim().replace(/^"|"$/g,'') : '';
       if (sku && nazwa) RAW_NAMES[sku] = nazwa;
     });
-    document.getElementById('raw-search').placeholder = 'Wpisz fragment kodu lub nazwy...';
+  } catch(e) { console.error('Błąd surowce.csv:', e); }
+}
+
+async function loadAnalyses() {
+  document.getElementById('analyses-list').innerHTML = '<div class="empty-state">Ładowanie...</div>';
+  try {
+    const resp = await fetch(GAS_URL + '?action=list&email=' + encodeURIComponent(currentUser.email) + '&dzial=' + encodeURIComponent(currentUserInfo.dzial) + '&rola=' + encodeURIComponent(currentUserInfo.rola));
+    const data = await resp.json();
+    renderAnalyses(data.analyses || []);
   } catch(e) {
-    document.getElementById('raw-search').placeholder = '— błąd ładowania słownika —';
-    console.error(e);
+    document.getElementById('analyses-list').innerHTML = '<div class="empty-state">Błąd ładowania. Sprawdź połączenie.</div>';
   }
 }
 
-function onSearch() {
-  const query = document.getElementById('raw-search').value.toLowerCase().trim();
-  const dropdown = document.getElementById('raw-dropdown');
-  if (!query) { dropdown.style.display = 'none'; return; }
-  const matches = Object.entries(RAW_NAMES).filter(([sku, nazwa]) =>
-    sku.toLowerCase().includes(query) || nazwa.toLowerCase().includes(query)
-  ).slice(0, 30);
-  if (matches.length === 0) {
-    dropdown.innerHTML = '<div style="padding:10px 14px;font-size:13px;color:var(--text-muted);">Brak wyników</div>';
-  } else {
-    dropdown.innerHTML = matches.map(([sku, nazwa]) =>
-      `<div onclick="selectSurowiec('${sku.replace(/'/g,"\\'")}','${nazwa.replace(/'/g,"\\'")}'')"
-        style="padding:8px 14px;font-size:13px;cursor:pointer;border-bottom:1px solid var(--gray-border);"
-        onmouseover="this.style.background='var(--gray-bg)'" onmouseout="this.style.background=''">
-        <strong>${sku}</strong> — ${nazwa}
-      </div>`
-    ).join('');
+function renderAnalyses(analyses) {
+  const list = document.getElementById('analyses-list');
+  if (!analyses.length) {
+    list.innerHTML = '<div class="empty-state">Brak analiz do wyświetlenia.</div>'; return;
   }
-  dropdown.style.display = 'block';
+  const myStep = DEPT_STEPS[currentUserInfo.dzial] || 0;
+  const isAdmin = currentUserInfo.rola === 'admin';
+  const isInit = currentUserInfo.inicjator === 'tak';
+
+  list.innerHTML = analyses.map(a => {
+    const active = parseInt(a.aktywny_krok) || 1;
+    const done = active > 7;
+    const isMyTurn = !done && (isAdmin || (isInit && active === 1) || myStep === active);
+    const statusTxt = done ? 'Zakończona' : isMyTurn ? 'Twoja kolej' : 'W toku · krok ' + active;
+    const statusCls = done ? 's-done' : isMyTurn ? 's-mine' : 's-progress';
+    const dots = Array.from({length:7},(_,i) => `<div class="dot${i+1<active?' done':i+1===active?' active':''}"></div>`).join('');
+    return `<div class="analysis-card" onclick="openAnalysis('${a.id}',${active})">
+      <div class="ac-top">
+        <div><h3>${a.raw_code||'—'} — ${a.raw_name||'—'}</h3>
+        <div class="ac-meta">LOT: ${a.lot_in||'—'} &nbsp;·&nbsp; ${(a.timestamp||'').substring(0,10)||'—'} &nbsp;·&nbsp; ${a.inicjator_imie||'—'}</div></div>
+        <span class="status-badge ${statusCls}">${statusTxt}</span>
+      </div>
+      <div class="progress-dots">${dots}</div>
+    </div>`;
+  }).join('');
+}
+
+// ═══════════════════════
+// ANALYSIS OPEN/NEW
+// ═══════════════════════
+function startNewAnalysis() {
+  currentAnalysisId = 'new';
+  activeAnalysisStep = 1;
+  currentStep = 1;
+  clearForm();
+  showFormScreen();
+  updateFormUI();
+}
+
+async function openAnalysis(id, active) {
+  currentAnalysisId = id;
+  activeAnalysisStep = active;
+  const isAdmin = currentUserInfo.rola === 'admin';
+  const myStep = DEPT_STEPS[currentUserInfo.dzial] || 1;
+  const isInit = currentUserInfo.inicjator === 'tak';
+
+  if (isAdmin) currentStep = Math.min(active, 7);
+  else if (isInit && active === 1) currentStep = 1;
+  else currentStep = myStep;
+
+  try {
+    const resp = await fetch(GAS_URL + '?action=get&id=' + encodeURIComponent(id));
+    const data = await resp.json();
+    if (data.analysis) populateForm(data.analysis);
+  } catch(e) { console.error(e); }
+
+  showFormScreen();
+  updateFormUI();
+}
+
+function clearForm() {
+  document.querySelectorAll('#form-screen input:not([type=hidden]):not([type=radio]), #form-screen select, #form-screen textarea').forEach(el => el.value = '');
+  document.querySelectorAll('#form-screen input[type=radio]').forEach(el => el.checked = false);
+  document.getElementById('raw-code').value = '';
+}
+
+function populateForm(data) {
+  const map = {
+    'lot-in':'lot_in','orig-exp':'orig_exp','qty':'qty','location':'location',
+    'ident-date':'ident_date','cause':'cause','loss-val':'loss_val','log-person':'log_person',
+    'corr-action':'corr_action','temp':'temp','openings':'openings',
+    'rd-params':'rd_params','rd-recipes':'rd_recipes','rd-pct':'rd_pct','rd-person':'rd_person','rd-impact':'rd_impact',
+    'qa-methods':'qa_methods','qa-budget':'qa_budget','qa-person':'qa_person','qa-client-req':'qa_client_req',
+    'prod-mass':'prod_mass','prod-person':'prod_person',
+    'sen-result':'sen_result','sen-grade':'sen_grade','sen-date':'sen_date','sen-person':'sen_person',
+    'sell-price':'sell_price','decision-reason':'decision_reason',
+    'proto-num':'proto_num','decision-date':'decision_date','new-exp':'new_exp','new-lot':'new_lot','label-note':'label_note'
+  };
+  Object.entries(map).forEach(([elId, key]) => {
+    const el = document.getElementById(elId);
+    if (el && data[key] !== undefined) el.value = data[key];
+  });
+  if (data.raw_code) {
+    document.getElementById('raw-code').value = data.raw_code;
+    document.getElementById('raw-search').value = data.raw_code;
+    document.getElementById('raw-name').value = data.raw_name || '';
+  }
+  ['flag','pkg','sell','decision'].forEach(n => {
+    if (data[n]) { const el = document.querySelector(`input[name="${n}"][value="${data[n]}"]`); if (el) el.checked = true; }
+  });
+}
+
+// ═══════════════════════
+// FORM UI
+// ═══════════════════════
+function showDashboard() {
+  document.getElementById('form-screen').style.display = 'none';
+  document.getElementById('dashboard').style.display = '';
+  loadAnalyses();
+}
+
+function showFormScreen() {
+  document.getElementById('dashboard').style.display = 'none';
+  document.getElementById('form-screen').style.display = '';
+}
+
+function updateFormUI() {
+  for (let i = 1; i <= 7; i++) {
+    const el = document.getElementById('step-' + i);
+    if (el) el.className = i === currentStep ? '' : 'step-hidden';
+  }
+  document.querySelectorAll('.ps').forEach((b, i) => {
+    b.className = 'ps' + (i+1 < currentStep ? ' done' : i+1 === currentStep ? ' active' : '');
+  });
+  document.getElementById('step-title').textContent = `Krok ${currentStep} z 7`;
+  document.getElementById('step-desc').textContent = STEP_NAMES[currentStep] || '';
+  document.getElementById('btn-prev').style.display = currentStep > 1 ? '' : 'none';
+
+  const btnNext = document.getElementById('btn-next');
+  btnNext.style.display = currentStep === 7 ? 'none' : '';
+
+  applyPermissions();
+  if (currentStep === 7) buildSummary();
+  document.getElementById('nav-hint').textContent = currentStep < 7 ? 'Możesz przeglądać inne kroki w dowolnym momencie' : '';
+}
+
+function applyPermissions() {
+  const isAdmin = currentUserInfo.rola === 'admin';
+  if (isAdmin) return;
+  const myStep = DEPT_STEPS[currentUserInfo.dzial] || -1;
+  const isInit = currentUserInfo.inicjator === 'tak';
+
+  for (let s = 1; s <= 6; s++) {
+    const el = document.getElementById('step-' + s);
+    if (!el) continue;
+    const canEdit = (s === 1 && isInit && activeAnalysisStep === 1) || (s === myStep && s === activeAnalysisStep);
+    el.querySelectorAll('input:not([type=hidden]), select, textarea').forEach(f => { f.disabled = !canEdit; });
+    if (!canEdit && s === currentStep) {
+      const existing = el.querySelector('.locked-info');
+      if (!existing) {
+        const info = document.createElement('div');
+        info.className = 'locked-info';
+        info.textContent = s < activeAnalysisStep ? '✓ Ten krok został już wypełniony.' : '🔒 Ten krok czeka na wcześniejsze działy.';
+        el.insertBefore(info, el.firstChild);
+      }
+    }
+  }
+}
+
+function nextStep() { if (currentStep < 7) { currentStep++; updateFormUI(); window.scrollTo({top:0,behavior:'smooth'}); } }
+function prevStep() { if (currentStep > 1) { currentStep--; updateFormUI(); window.scrollTo({top:0,behavior:'smooth'}); } }
+
+// ═══════════════════════
+// SEARCH
+// ═══════════════════════
+function onSearch() {
+  const q = document.getElementById('raw-search').value.toLowerCase().trim();
+  const dd = document.getElementById('raw-dropdown');
+  if (!q) { dd.style.display = 'none'; return; }
+  const matches = Object.entries(RAW_NAMES).filter(([s,n]) => s.toLowerCase().includes(q) || n.toLowerCase().includes(q)).slice(0,30);
+  dd.innerHTML = matches.length
+    ? matches.map(([s,n]) => `<div class="search-item" onclick="selectSurowiec('${s.replace(/'/g,"\\'")}','${n.replace(/'/g,"\\'").replace(/"/g,'&quot;')}')"><strong>${s}</strong> — ${n}</div>`).join('')
+    : '<div class="search-item" style="color:var(--text-muted);">Brak wyników</div>';
+  dd.style.display = 'block';
 }
 
 function selectSurowiec(sku, nazwa) {
@@ -654,92 +667,28 @@ function selectSurowiec(sku, nazwa) {
   document.getElementById('raw-dropdown').style.display = 'none';
 }
 
-document.addEventListener('click', function(e) {
+document.addEventListener('click', e => {
   if (!e.target.closest('#raw-search') && !e.target.closest('#raw-dropdown')) {
-    document.getElementById('raw-dropdown').style.display = 'none';
+    const dd = document.getElementById('raw-dropdown');
+    if (dd) dd.style.display = 'none';
   }
 });
 
-const STEPS = [
-  { title: "Krok 1 z 7", desc: "Identyfikacja surowca" },
-  { title: "Krok 2 z 7", desc: "Logistyka — przyczyny i magazynowanie" },
-  { title: "Krok 3 z 7", desc: "R&D — analiza specyfikacji" },
-  { title: "Krok 4 z 7", desc: "Jakość i produkcja — metody badawcze" },
-  { title: "Krok 5 z 7", desc: "Sensoryka i zakupy" },
-  { title: "Krok 6 z 7", desc: "Decyzja końcowa i nowe parametry" },
-  { title: "Krok 7 z 7", desc: "Podsumowanie i zapis do Google Sheets" }
-];
-
-let cur = 1;
-
-function onCodeChange() {
-  const code = document.getElementById('raw-code').value;
-  document.getElementById('raw-name').value = RAW_NAMES[code] || '';
-}
-
-function updateUI() {
-  for (let i = 1; i <= 7; i++) {
-    const el = document.getElementById('step-' + i);
-    if (el) el.className = i === cur ? '' : 'step-hidden';
-  }
-  const bars = document.querySelectorAll('.ps');
-  bars.forEach((b, i) => {
-    b.className = 'ps' + (i < cur - 1 ? ' done' : i === cur - 1 ? ' active' : '');
-  });
-  document.getElementById('step-title').textContent = STEPS[cur - 1].title;
-  document.getElementById('step-desc').textContent = STEPS[cur - 1].desc;
-  document.getElementById('btn-prev').style.display = cur > 1 ? '' : 'none';
-  const btnNext = document.getElementById('btn-next');
-  btnNext.textContent = cur === 7 ? '✓ Gotowe' : 'Dalej →';
-  btnNext.style.display = cur === 7 ? 'none' : '';
-  document.getElementById('nav-hint').textContent = cur < 7 ? 'Możesz wrócić do poprzednich kroków w dowolnym momencie' : '';
-  if (cur === 7) buildSummary();
-  window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-
-function nextStep() { if (cur < 7) { cur++; updateUI(); } }
-function prevStep() { if (cur > 1) { cur--; updateUI(); } }
-
+// ═══════════════════════
+// COLLECT & SUBMIT
+// ═══════════════════════
 function gv(id) { const el = document.getElementById(id); return el ? el.value.trim() : ''; }
-function gr(name) { const el = document.querySelector('input[name="' + name + '"]:checked'); return el ? el.value : ''; }
-
-function buildSummary() {
-  const rows = [
-    ['Kod surowca', gv('raw-code')],
-    ['Nazwa surowca', gv('raw-name')],
-    ['Numer partii (LOT)', gv('lot-in')],
-    ['Oryginalna data ważności', gv('orig-exp')],
-    ['Ilość', gv('qty')],
-    ['Lokalizacja', gv('location')],
-    ['Przyczyna identyfikacji', gr('flag')],
-    ['Temperatura magazynowania', gv('temp') ? gv('temp') + ' °C' : ''],
-    ['Stan opakowania', gr('pkg')],
-    ['Osoba — Logistyka', gv('log-person')],
-    ['Osoba — R&D', gv('rd-person')],
-    ['Osoba — Jakość', gv('qa-person')],
-    ['Osoba — Produkcja', gv('prod-person')],
-    ['Wynik sensoryczny', gv('sen-grade')],
-    ['Możliwość sprzedaży', gr('sell')],
-    ['Decyzja końcowa', gr('decision')],
-    ['Numer protokołu', gv('proto-num')],
-    ['Data decyzji', gv('decision-date')],
-    ['Nowa data ważności', gv('new-exp')],
-    ['Nowy numer LOT', gv('new-lot')],
-  ];
-  const html = rows
-    .filter(r => r[1])
-    .map(r => `<div class="summary-row"><span class="sk">${r[0]}</span><span class="sv">${r[1]}</span></div>`)
-    .join('');
-  document.getElementById('summary-content').innerHTML = html || '<p style="color:var(--text-muted);font-size:14px;">Brak wypełnionych danych.</p>';
-}
+function gr(name) { const el = document.querySelector(`input[name="${name}"]:checked`); return el ? el.value : ''; }
 
 function collectData() {
   return {
-    timestamp: new Date().toISOString(),
+    id: currentAnalysisId, aktywny_krok: activeAnalysisStep,
+    inicjator_email: currentUser.email, inicjator_imie: currentUser.name,
+    dzial: currentUserInfo.dzial, timestamp: new Date().toISOString(),
     raw_code: gv('raw-code'), raw_name: gv('raw-name'),
     lot_in: gv('lot-in'), orig_exp: gv('orig-exp'),
     qty: gv('qty'), location: gv('location'),
-    flag_reason: gr('flag'), ident_date: gv('ident-date'),
+    flag: gr('flag'), ident_date: gv('ident-date'),
     cause: gv('cause'), loss_val: gv('loss-val'),
     log_person: gv('log-person'), corr_action: gv('corr-action'),
     temp: gv('temp'), pkg: gr('pkg'), openings: gv('openings'),
@@ -750,94 +699,44 @@ function collectData() {
     prod_mass: gv('prod-mass'), prod_person: gv('prod-person'),
     sen_result: gv('sen-result'), sen_grade: gv('sen-grade'),
     sen_date: gv('sen-date'), sen_person: gv('sen-person'),
-    sell_opt: gr('sell'), sell_price: gv('sell-price'),
+    sell: gr('sell'), sell_price: gv('sell-price'),
     decision: gr('decision'), decision_reason: gv('decision-reason'),
     proto_num: gv('proto-num'), decision_date: gv('decision-date'),
     new_exp: gv('new-exp'), new_lot: gv('new-lot'), label_note: gv('label-note')
   };
 }
 
-async function saveToSheets() {
-  const url = GAS_URL;
-  document.getElementById('save-status').innerHTML = '<div class="alert alert-info">Zapisywanie danych...</div>';
-  try {
-    await fetch(url, {
-      method: 'POST',
-      mode: 'no-cors',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(collectData())
-    });
-    document.getElementById('save-status').innerHTML = '<div class="alert alert-ok">Dane wysłane do Google Sheets. Sprawdź arkusz "Analizy_Surowcow".</div>';
-  } catch(e) {
-    document.getElementById('save-status').innerHTML = '<div class="alert alert-err">Błąd połączenia: ' + e.message + '</div>';
-  }
-}
-
-function exportJSON() {
+async function submitAnalysis() {
+  const btn = document.getElementById('btn-submit');
+  const statusEl = document.getElementById('save-status');
+  btn.disabled = true;
+  statusEl.innerHTML = '<div class="alert alert-info">Zapisywanie i wysyłanie powiadomień email...</div>';
   const data = collectData();
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'analiza_' + (data.raw_code || 'surowiec') + '_' + (data.lot_in || 'LOT') + '.json';
-  a.click();
-}
-
-function resetForm() {
-  if (confirm('Czy na pewno chcesz zacząć nową analizę? Dane zostaną wyczyszczone.')) {
-    document.querySelectorAll('input:not([readonly]), select, textarea').forEach(el => el.value = '');
-    document.querySelectorAll('input[type=radio]').forEach(el => el.checked = false);
-    cur = 1;
-    updateUI();
+  data.action = 'submit';
+  try {
+    await fetch(GAS_URL, { method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data) });
+    statusEl.innerHTML = '<div class="alert alert-ok">✓ Krok zatwierdzony i zapisany. Następny dział otrzymał powiadomienie email.</div>';
+  } catch(e) {
+    statusEl.innerHTML = '<div class="alert alert-err">Błąd: ' + e.message + '</div>';
+    btn.disabled = false;
   }
 }
 
-const GAS_CODE = `function doPost(e) {
-  var data = JSON.parse(e.postData.contents);
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName("Analizy_Surowcow");
-  if (!sheet) { sheet = ss.insertSheet("Analizy_Surowcow"); }
-
-  var headers = [
-    "Timestamp","Kod surowca","Nazwa surowca","Nr partii LOT",
-    "Oryginalna data waznosci","Ilosc","Lokalizacja","Przyczyna identyfikacji",
-    "Data identyfikacji","Przyczyny pozostalosci","Wartosc strat PLN",
-    "Osoba Logistyka","Dzialania korygujace","Temperatura C","Opakowanie",
-    "Liczba otwarca","Parametry krytyczne","Receptury","Zawartosc pct",
-    "Osoba RD","Wplyw na produkt","Metody ISO","Budzet badan PLN",
-    "Osoba Jakosc","Wymagania klienta","Masa produktu kg","Osoba Produkcja",
-    "Wynik sensoryczny","Ocena sensoryczna","Data sensoryki","Osoba Sensoryka",
-    "Mozliwosc sprzedazy","Cena sprzedazy","Decyzja koncowa","Uzasadnienie",
-    "Nr protokolu","Data decyzji","Nowa data waznosci","Nowy LOT","Uwagi znakowanie"
+function buildSummary() {
+  const rows = [
+    ['Kod surowca', gv('raw-code')],['Nazwa surowca', gv('raw-name')],
+    ['LOT', gv('lot-in')],['Data ważności', gv('orig-exp')],
+    ['Ilość', gv('qty')],['Lokalizacja', gv('location')],
+    ['Temperatura', gv('temp') ? gv('temp')+' °C' : ''],
+    ['Opakowanie', gr('pkg')],['Ocena sensoryczna', gv('sen-grade')],
+    ['Możliwość sprzedaży', gr('sell')],['Decyzja', gr('decision')],
+    ['Nr protokołu', gv('proto-num')],['Data decyzji', gv('decision-date')],
+    ['Nowa data ważności', gv('new-exp')],['Nowy LOT', gv('new-lot')]
   ];
-
-  if (sheet.getLastRow() === 0) { sheet.appendRow(headers); }
-
-  sheet.appendRow([
-    data.timestamp, data.raw_code, data.raw_name, data.lot_in,
-    data.orig_exp, data.qty, data.location, data.flag_reason,
-    data.ident_date, data.cause, data.loss_val, data.log_person,
-    data.corr_action, data.temp, data.pkg, data.openings,
-    data.rd_params, data.rd_recipes, data.rd_pct, data.rd_person,
-    data.rd_impact, data.qa_methods, data.qa_budget, data.qa_person,
-    data.qa_client_req, data.prod_mass, data.prod_person, data.sen_result,
-    data.sen_grade, data.sen_date, data.sen_person, data.sell_opt,
-    data.sell_price, data.decision, data.decision_reason, data.proto_num,
-    data.decision_date, data.new_exp, data.new_lot, data.label_note
-  ]);
-
-  return ContentService
-    .createTextOutput(JSON.stringify({status:"ok"}))
-    .setMimeType(ContentService.MimeType.JSON);
-}`;
-
-function toggleScript() {
-  const panel = document.getElementById('gas-panel');
-  document.getElementById('gas-code-block').textContent = GAS_CODE;
-  panel.style.display = panel.style.display === 'none' ? '' : 'none';
+  document.getElementById('summary-content').innerHTML = rows.filter(r=>r[1])
+    .map(r=>`<div class="summary-row"><span class="sk">${r[0]}</span><span class="sv">${r[1]}</span></div>`).join('')
+    || '<p style="color:var(--text-muted);font-size:14px;">Brak danych.</p>';
 }
-
-loadSurowce();
-updateUI();
 </script>
 </body>
 </html>
